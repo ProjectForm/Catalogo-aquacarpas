@@ -35,9 +35,10 @@ Se o `npm install` acusar erro de certificado (`UNABLE_TO_GET_ISSUER_CERT_LOCALL
 Use **foto real do peixe**, de cima, em bacia azul ou clara (ver `../conhecimento/referencias-visuais.md`).
 
 ## Publicar na Vercel
-Ver `../PROMPTS/05-catalogo-online.md` (seção "Como publicar"). Resumo: projeto a partir do repositório com
-**Root Directory = `catalogo`**, variáveis `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e
-`NEXT_PUBLIC_SITE_URL`, e Web Analytics ligado.
+Este diretório é o repositório `github.com/ProjectForm/Catalogo-aquacarpas` (branch `main`). Importar esse repositório
+na Vercel (Root Directory `./`), com as variáveis `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e
+`NEXT_PUBLIC_SITE_URL`, e ligar o Web Analytics. Depois disso, cada `git push` na `main` publica sozinho. Passo a passo em
+`../PROMPTS/05-catalogo-online.md` (seção "Como publicar"). O repositório é **público**: nunca coloque segredo aqui.
 
 ## Segurança
 - A chave `anon` do Supabase é pública por natureza. A `service_role` **nunca** entra aqui.
