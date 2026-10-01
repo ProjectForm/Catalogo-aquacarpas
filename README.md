@@ -15,8 +15,22 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
 | --- | --- |
 | `/` | catálogo por categoria; o peixe com `destaque = true` aparece grande no topo |
 | `/p/<slug>` | página do peixe (galeria, preço, descrição, botão de WhatsApp) |
-| `/entrega` | resumo da entrega + **cadastro para envio** (com ou sem itens no pedido) |
-| `/obrigado` | confirmação com o botão do WhatsApp |
+| `/entrega` | resumo da entrega + **cadastro para envio** (com ou sem itens no pedido): entrega no endereço, retirada na transportadora ou retirada no local |
+| `/obrigado` | confirmação; abre sozinho o WhatsApp da Aquacarpas com os dados do cliente (há botão se não abrir) |
+
+## Abas, WhatsApp e entrega por transportadora
+- **Abas**: cada linha de `catalogo_categorias` é uma aba fixa no topo do catálogo (ex.: "Nishikigoi Ultra Premium"), com a
+  contagem de peixes. Para mover um peixe de aba, mude `catalogo.categoria` (slug). Menor `ordem` da categoria aparece antes.
+- **Botão flutuante do WhatsApp**: sempre visível no canto; leva direto para `wa.me/<número>` (número em `src/lib/config.ts`).
+- **CEP sem entrega em casa**: o Juan informa as faixas; o Claude Code grava em `entrega_restricoes` (cep_inicio, cep_fim com
+  8 dígitos, `ativo`, `observacao` opcional com o nome da transportadora). Exemplo:
+  `insert into entrega_restricoes (cep_inicio, cep_fim, cidade, uf, observacao) values ('14000000','14099999','Ribeirão Preto','SP','Transportadora X');`
+  O formulário passa sozinho para "retirada na transportadora" quando o CEP cai numa faixa, e a função `catalogo-api` confere de
+  novo no servidor. A tabela começa **vazia** (sem restrição). Depois da venda, a equipe preenche `vendas.transportadora` e
+  `vendas.transportadora_endereco`.
+- **Aviso por WhatsApp**: sem a API oficial não há envio automático do servidor. Ao concluir o cadastro, o navegador do cliente
+  abre o WhatsApp **(17) 98151-6665** com os dados dele; ele só toca em enviar. O número de destino é o secret
+  `WHATSAPP_ATENDIMENTO` da função (padrão `5517981516665`). O CRM já recebe tudo antes desse passo.
 
 ## Rodar no computador
 Precisa de Node 20.9 ou superior.
