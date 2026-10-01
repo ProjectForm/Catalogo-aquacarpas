@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function EntregaPage() {
-  const detalhes = [POLITICAS.jejum, POLITICAS.transporte, POLITICAS.garantia, POLITICAS.diasEnvio, POLITICAS.frete, POLITICAS.pagamento];
+  const detalhes = [POLITICAS.jejum, POLITICAS.transporte, POLITICAS.garantia, POLITICAS.diasEnvio, POLITICAS.transportadora, POLITICAS.frete, POLITICAS.pagamento];
 
   return (
     <div className="pagina">

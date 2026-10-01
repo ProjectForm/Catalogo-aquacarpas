@@ -92,8 +92,23 @@ p { margin: 0; }
 .confianca p { font-size: 0.9rem; color: var(--suave); }
 @media (max-width: 760px) { .confianca .item { border-right: 0; border-bottom: 1px solid var(--linha); } .confianca .item:last-child { border-bottom: 0; } }
 
+/* ---------- abas de categoria ---------- */
+.abas { position: sticky; top: 68px; z-index: 25; background: rgba(14, 14, 14, 0.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--linha); }
+.abas-lista { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 10px; }
+.abas-lista::-webkit-scrollbar { display: none; }
+.abas-lista a { flex: none; font-size: 0.88rem; color: var(--suave); border: 1px solid var(--linha); border-radius: 999px; padding: 7px 16px; white-space: nowrap; transition: color .15s, border-color .15s, background .15s; }
+.abas-lista a:hover { color: var(--texto-forte); border-color: var(--linha-forte); }
+.abas-lista a[aria-current="true"] { color: #0e0e0e; background: var(--texto); border-color: var(--texto); }
+.qtd-aba { opacity: 0.6; font-size: 0.78rem; margin-left: 4px; }
+
+/* ---------- botão flutuante do WhatsApp ---------- */
+.whats-flutuante { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 45; display: inline-flex; align-items: center; gap: 10px; background: #25d366; color: #0e0e0e; font: 600 0.92rem var(--sans); padding: 13px 20px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); transition: transform .15s, box-shadow .15s; }
+.whats-flutuante:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55); }
+.whats-flutuante.acima-barra { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 640px) { .whats-flutuante { padding: 14px; } .whats-flutuante span { display: none; } }
+
 /* ---------- seções e cards ---------- */
-.secao { padding: clamp(48px, 7vw, 88px) 0 8px; }
+.secao { padding: clamp(48px, 7vw, 88px) 0 8px; scroll-margin-top: 130px; }
 .secao-cab { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 28px; border-bottom: 1px solid var(--linha); padding-bottom: 18px; }
 .secao-cab h2 { font-size: clamp(1.9rem, 4vw, 2.7rem); }
 .secao-cab p { color: var(--suave); font-size: 0.95rem; max-width: 46ch; }
@@ -177,6 +192,9 @@ p { margin: 0; }
 .campo .ajuda { font-size: 0.78rem; color: var(--suave); }
 .escolhas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 560px) { .escolhas { grid-template-columns: 1fr; } }
+.escolhas.tres { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 860px) { .escolhas.tres { grid-template-columns: 1fr; } }
+.escolha.desativada { opacity: 0.45; cursor: not-allowed; }
 .escolha { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--linha-forte); border-radius: var(--raio); padding: 14px; cursor: pointer; background: var(--bg-2); }
 .escolha:has(input:checked) { border-color: var(--acento); background: rgba(232, 90, 44, 0.08); }
 .escolha input { margin-top: 4px; accent-color: var(--acento); }

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { precoUnitario } from "@/lib/catalogo";
-import { API_URL, RETIRADA, SUPABASE_ANON_KEY } from "@/lib/config";
+import { API_URL, POLITICAS, RETIRADA, SUPABASE_ANON_KEY } from "@/lib/config";
+import { carregarRestricoes, restricaoDoCep } from "@/lib/entrega";
+import type { Restricao, TipoEntrega } from "@/lib/entrega";
 import { ESTADOS, brl, documentoValido, mascaraCep, mascaraDocumento, mascaraTelefone, somenteDigitos } from "@/lib/format";
 import { capturarUtm, evento, sessaoId, utmAtual } from "@/lib/tracking";
 import { useCart } from "./CartProvider";
@@ -14,7 +16,7 @@ interface Dados {
   telefone: string;
   email: string;
   documento: string;
-  tipo: "envio" | "retirada";
+  tipo: TipoEntrega;
   cep: string;
   rua: string;
   numero: string;
@@ -44,10 +46,19 @@ export function EntregaForm() {
   const [buscandoCep, setBuscandoCep] = useState(false);
   const iniciou = useRef(false);
 
+  const [restricoes, setRestricoes] = useState<Restricao[]>([]);
+
   useEffect(() => {
     const utm = capturarUtm();
     if (utm.ref) setD((x) => ({ ...x, codigoIndicacao: utm.ref!.toUpperCase() }));
+    void carregarRestricoes().then(setRestricoes);
   }, []);
+
+  // CEP que não recebe entrega na residência: o cadastro passa sozinho para "retirada na transportadora".
+  const restricao = useMemo(() => restricaoDoCep(somenteDigitos(d.cep), restricoes), [d.cep, restricoes]);
+  useEffect(() => {
+    if (restricao) setD((x) => (x.tipo === "envio" ? { ...x, tipo: "transportadora" } : x));
+  }, [restricao]);
 
   const set = <K extends keyof Dados>(k: K, v: Dados[K]) => setD((x) => ({ ...x, [k]: v }));
   const soCadastro = itens.length === 0;
@@ -129,6 +140,8 @@ export function EntregaForm() {
   }
 
   const envio = d.tipo === "envio";
+  const transportadora = d.tipo === "transportadora";
+  const comEndereco = envio || transportadora;
 
   return (
     <div className="duas-colunas" id="cadastro">
@@ -165,16 +178,23 @@ export function EntregaForm() {
 
         <section className="bloco-form">
           <h2>Como quer receber</h2>
-          <div className="escolhas" role="radiogroup" aria-label="Forma de recebimento">
-            <label className="escolha">
-              <input type="radio" name="tipo" checked={envio} onChange={() => set("tipo", "envio")} />
+          <div className="escolhas tres" role="radiogroup" aria-label="Forma de recebimento">
+            <label className={`escolha${restricao ? " desativada" : ""}`}>
+              <input type="radio" name="tipo" checked={envio} disabled={Boolean(restricao)} onChange={() => set("tipo", "envio")} />
               <div>
-                <strong>Envio para o meu endereço</strong>
+                <strong>Entrega no meu endereço</strong>
                 <span>Entrega em até 3 dias úteis, já com o jejum pré-envio.</span>
               </div>
             </label>
             <label className="escolha">
-              <input type="radio" name="tipo" checked={!envio} onChange={() => set("tipo", "retirada")} />
+              <input type="radio" name="tipo" checked={transportadora} onChange={() => set("tipo", "transportadora")} />
+              <div>
+                <strong>Retirada na transportadora</strong>
+                <span>Na mais próxima do seu CEP. Para CEPs sem entrega na residência.</span>
+              </div>
+            </label>
+            <label className="escolha">
+              <input type="radio" name="tipo" checked={d.tipo === "retirada"} onChange={() => set("tipo", "retirada")} />
               <div>
                 <strong>Retirada no local</strong>
                 <span>São José do Rio Preto. Prazo: {RETIRADA.prazo}.</span>
@@ -182,7 +202,18 @@ export function EntregaForm() {
             </label>
           </div>
 
-          {envio ? (
+          {restricao ? (
+            <p className="aviso" style={{ marginTop: 0 }} role="status">
+              Para este CEP não é possível entregar diretamente na residência. A retirada é na transportadora mais próxima do seu CEP.
+              {restricao.observacao ? ` ${restricao.observacao}` : ""} Nossa equipe confirma qual é pelo WhatsApp.
+            </p>
+          ) : transportadora ? (
+            <p className="aviso" style={{ marginTop: 0 }}>
+              {POLITICAS.transportadora.texto}
+            </p>
+          ) : null}
+
+          {comEndereco ? (
             <div className="campos">
               <div className="campo m2">
                 <label htmlFor="cep">CEP</label>
@@ -197,20 +228,20 @@ export function EntregaForm() {
                 <span className="ajuda">{buscandoCep ? "Buscando endereço..." : "Preenchemos o restante pelo CEP."}</span>
               </div>
               <div className="campo m4">
-                <label htmlFor="rua">Rua</label>
-                <input id="rua" name="rua" autoComplete="address-line1" required maxLength={150} value={d.rua} onChange={(e) => set("rua", e.target.value)} />
+                <label htmlFor="rua">Rua{!envio ? <span className="opcional"> (opcional)</span> : null}</label>
+                <input id="rua" name="rua" autoComplete="address-line1" required={envio} maxLength={150} value={d.rua} onChange={(e) => set("rua", e.target.value)} />
               </div>
               <div className="campo m2">
-                <label htmlFor="numero">Número</label>
-                <input id="numero" name="numero" autoComplete="off" required maxLength={20} value={d.numero} onChange={(e) => set("numero", e.target.value)} />
+                <label htmlFor="numero">Número{!envio ? <span className="opcional"> (opcional)</span> : null}</label>
+                <input id="numero" name="numero" autoComplete="off" required={envio} maxLength={20} value={d.numero} onChange={(e) => set("numero", e.target.value)} />
               </div>
               <div className="campo m4">
                 <label htmlFor="complemento">Complemento <span className="opcional">(opcional)</span></label>
                 <input id="complemento" name="complemento" autoComplete="address-line2" maxLength={80} value={d.complemento} onChange={(e) => set("complemento", e.target.value)} />
               </div>
               <div className="campo m3">
-                <label htmlFor="bairro">Bairro</label>
-                <input id="bairro" name="bairro" required maxLength={80} value={d.bairro} onChange={(e) => set("bairro", e.target.value)} />
+                <label htmlFor="bairro">Bairro{!envio ? <span className="opcional"> (opcional)</span> : null}</label>
+                <input id="bairro" name="bairro" required={envio} maxLength={80} value={d.bairro} onChange={(e) => set("bairro", e.target.value)} />
               </div>
               <div className="campo m3">
                 <label htmlFor="cidade">Cidade</label>

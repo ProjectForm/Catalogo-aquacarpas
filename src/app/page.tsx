@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoriaNav } from "@/components/CategoriaNav";
 import { NomeProduto } from "@/components/NomeProduto";
 import { ProdutoCard } from "@/components/ProdutoCard";
 import { TrackView } from "@/components/TrackView";
@@ -61,19 +62,21 @@ export default async function Home() {
         </div>
       </section>
 
+      <CategoriaNav itens={secoes.map((s) => ({ slug: s.categoria.slug, nome: s.categoria.nome, total: s.produtos.length }))} />
+
       <div id="catalogo" className="container">
         {secoes.length === 0 ? (
           <section className="secao">
             <p className="vazio">O catálogo está sendo atualizado. Fale com a gente pelo WhatsApp para ver os peixes disponíveis.</p>
           </section>
         ) : (
-          secoes.map((s, i) => (
-            <section key={s.categoria.slug} className="secao" aria-labelledby={`cat-${s.categoria.slug}`}>
+          secoes.map((s) => (
+            <section key={s.categoria.slug} id={`sec-${s.categoria.slug}`} className="secao" aria-labelledby={`cat-${s.categoria.slug}`}>
               <div className="secao-cab">
                 <h2 id={`cat-${s.categoria.slug}`}>{s.categoria.nome}</h2>
                 {s.categoria.descricao ? <p>{s.categoria.descricao}</p> : null}
               </div>
-              <div className={i === 0 ? "grade grande" : "grade"}>
+              <div className={s.produtos.every((p) => p.tipo === "exemplar_unico") ? "grade grande" : "grade"}>
                 {s.produtos.map((p) => (
                   <ProdutoCard key={p.codigo} produto={p} />
                 ))}

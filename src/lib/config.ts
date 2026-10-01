@@ -55,6 +55,11 @@ export const POLITICAS = {
     titulo: "Envios de segunda a quinta",
     texto: "O pedido confirmado entra na programação de envio, respeitando o jejum pré-envio.",
   },
+  transportadora: {
+    titulo: "Retirada na transportadora",
+    texto:
+      "Em alguns CEPs não é possível entregar diretamente no endereço da residência. Nesses casos, a retirada é na transportadora mais próxima do seu CEP, e a nossa equipe informa qual é pelo WhatsApp.",
+  },
   frete: {
     titulo: "Frete",
     texto:
@@ -65,6 +70,9 @@ export const POLITICAS = {
     texto: "Pix ou cartão (Mercado Pago, com juros). O pagamento é combinado com a nossa equipe pelo WhatsApp.",
   },
 } as const;
+
+/** Depois de enviar o cadastro, abre o WhatsApp da Aquacarpas com os dados do cliente já escritos (ele só toca em enviar). */
+export const ABRIR_WHATSAPP_AUTOMATICO = true;
 
 export const ACLIMATACAO =
   "Ao receber, deixe o saco fechado boiando no lago por cerca de 5 minutos, na sombra (sem sombra, use uma bacia). Depois solte apenas o peixe, descartando a água do saco.";
