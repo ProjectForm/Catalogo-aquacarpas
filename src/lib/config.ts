@@ -3,7 +3,10 @@
 
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+// Endereço público (sitemap, Open Graph, dados estruturados). Na Vercel vale o domínio de produção que ela mesma informa
+// (acompanha um domínio próprio, se um dia houver); NEXT_PUBLIC_SITE_URL só vale fora da Vercel.
+const producao = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+export const SITE_URL = (producao ? `https://${producao}` : (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000")).replace(/\/$/, "");
 
 export const API_URL = `${SUPABASE_URL}/functions/v1/catalogo-api`;
 

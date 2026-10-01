@@ -28,9 +28,15 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
   O formulário passa sozinho para "retirada na transportadora" quando o CEP cai numa faixa, e a função `catalogo-api` confere de
   novo no servidor. A tabela começa **vazia** (sem restrição). Depois da venda, a equipe preenche `vendas.transportadora` e
   `vendas.transportadora_endereco`.
-- **Aviso por WhatsApp**: sem a API oficial não há envio automático do servidor. Ao concluir o cadastro, o navegador do cliente
-  abre o WhatsApp **(17) 98151-6665** com os dados dele; ele só toca em enviar. O número de destino é o secret
-  `WHATSAPP_ATENDIMENTO` da função (padrão `5517981516665`). O CRM já recebe tudo antes desse passo.
+- **Aviso por WhatsApp (dois caminhos)**:
+  1. **Automático, para a equipe**: a função `catalogo-api` manda o resumo do pedido (peixes, total, nome, WhatsApp, e-mail,
+     recebimento e endereço; **nunca o CPF/CNPJ**) para o WhatsApp **(17) 98151-6665** pelo **CallMeBot** (serviço não oficial,
+     chave ativada pelo Juan em 2026-10-01). A chave fica no secret `CALLMEBOT_APIKEY` do Supabase (Project Settings, Edge
+     Functions, Secrets), **nunca no código**; sem o secret o pedido funciona e só o aviso não sai. Falha do CallMeBot não
+     derruba o pedido (o CRM já recebeu tudo).
+  2. **Pelo cliente**: a página `/obrigado` abre o WhatsApp com os dados dele já escritos; ele só toca em enviar. O número é o
+     secret `WHATSAPP_ATENDIMENTO` (padrão `5517981516665`).
+  Para parar o aviso: mande `Stop` ao CallMeBot pelo WhatsApp ou apague o secret `CALLMEBOT_APIKEY`.
 
 ## Rodar no computador
 Precisa de Node 20.9 ou superior.
