@@ -122,9 +122,12 @@ p { margin: 0; }
 .cartao .foto { position: relative; display: block; aspect-ratio: 5 / 4; background: var(--bg-3); overflow: hidden; }
 .cartao .foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
 .cartao:hover .foto img { transform: scale(1.03); }
-/* Blocos só de exemplares únicos (Nishikigoi): a moldura acompanha a foto, que aparece inteira, sem cortar cabeça nem cauda. */
-.grade.grande .cartao .foto { aspect-ratio: auto; }
-.grade.grande .cartao .foto img { height: auto; display: block; }
+/* Abas só de exemplares (Nishikigoi): todas as fotos de uma linha têm a mesma moldura. Fotos horizontais ficam numa linha
+   (5/4) e as verticais em outra (2/3); as muito estreitas aparecem inteiras, com a faixa escura dos lados. */
+.grade.grande + .grade.grande { margin-top: 26px; }
+.cartao[data-foto="vertical"] .foto, .cartao[data-foto="estreita"] .foto { aspect-ratio: 2 / 3; }
+.cartao[data-foto="estreita"] .foto img { object-fit: contain; }
+.cartao[data-foto="horizontal"] .foto { aspect-ratio: 5 / 4; }
 .cartao .selo { position: absolute; left: 12px; top: 12px; background: rgba(14, 14, 14, 0.82); border: 1px solid var(--linha-forte); color: var(--texto-forte); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 5px 9px; border-radius: 2px; }
 .cartao .corpo { display: flex; flex-direction: column; gap: 10px; padding: 18px 18px 20px; flex: 1; }
 .cartao h3 { font-size: 1.5rem; }

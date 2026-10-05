@@ -12,14 +12,14 @@ function meta(p: Produto): string {
   return partes.join(" · ");
 }
 
-export function ProdutoCard({ produto: p }: { produto: Produto }) {
+export function ProdutoCard({ produto: p, formato }: { produto: Produto; formato?: "horizontal" | "vertical" | "estreita" }) {
   const indisponivel = p.status !== "disponivel";
   const selo =
     p.status === "vendido" ? "Vendido" : p.status === "reservado" ? "Reservado" : null;
   const linhaMeta = meta(p);
 
   return (
-    <article className={`cartao${indisponivel ? " indisponivel" : ""}`}>
+    <article className={`cartao${indisponivel ? " indisponivel" : ""}`} data-foto={formato}>
       <Link href={`/p/${p.slug}`} className="foto" aria-label={`Ver ${p.nome}`}>
         {p.imagens[0] ? <img src={p.imagens[0]} alt={p.nome} loading="lazy" decoding="async" /> : null}
         {selo ? <span className="selo">{selo}</span> : null}

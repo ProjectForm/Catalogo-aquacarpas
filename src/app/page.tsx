@@ -3,11 +3,22 @@ import { CategoriaNav } from "@/components/CategoriaNav";
 import { NomeProduto } from "@/components/NomeProduto";
 import { ProdutoCard } from "@/components/ProdutoCard";
 import { TrackView } from "@/components/TrackView";
-import { listarSecoes } from "@/lib/catalogo";
+import { listarSecoes, type Produto } from "@/lib/catalogo";
 import { POLITICAS, SITE } from "@/lib/config";
 import { brl } from "@/lib/format";
 
 export const revalidate = 60;
+
+/** Proporção (largura/altura) da foto, gravada em catalogo.ficha.foto_ratio por `npm run foto` / pelo Claude Code. */
+function razaoFoto(p: Produto): number {
+  const r = p.ficha?.foto_ratio;
+  return typeof r === "number" && r > 0 ? r : 0.7;
+}
+/** horizontal (>= 1), vertical (0,6 a 1) ou estreita (< 0,6, mostrada inteira sem cortar). */
+function formatoFoto(p: Produto): "horizontal" | "vertical" | "estreita" {
+  const r = razaoFoto(p);
+  return r >= 1 ? "horizontal" : r < 0.6 ? "estreita" : "vertical";
+}
 
 export default async function Home() {
   const secoes = await listarSecoes();
@@ -76,11 +87,24 @@ export default async function Home() {
                 <h2 id={`cat-${s.categoria.slug}`}>{s.categoria.nome}</h2>
                 {s.categoria.descricao ? <p>{s.categoria.descricao}</p> : null}
               </div>
-              <div className={s.produtos.every((p) => p.tipo === "exemplar_unico") ? "grade grande" : "grade"}>
-                {s.produtos.map((p) => (
-                  <ProdutoCard key={p.codigo} produto={p} />
-                ))}
-              </div>
+              {s.produtos.every((p) => p.tipo === "exemplar_unico") ? (
+                // Abas só de exemplares: fotos horizontais e verticais em linhas separadas, cada linha com moldura igual.
+                [s.produtos.filter((p) => formatoFoto(p) === "horizontal"), s.produtos.filter((p) => formatoFoto(p) !== "horizontal")]
+                  .filter((grupo) => grupo.length > 0)
+                  .map((grupo) => (
+                    <div key={grupo[0].codigo} className="grade grande">
+                      {grupo.map((p) => (
+                        <ProdutoCard key={p.codigo} produto={p} formato={formatoFoto(p)} />
+                      ))}
+                    </div>
+                  ))
+              ) : (
+                <div className="grade">
+                  {s.produtos.map((p) => (
+                    <ProdutoCard key={p.codigo} produto={p} />
+                  ))}
+                </div>
+              )}
             </section>
           ))
         )}

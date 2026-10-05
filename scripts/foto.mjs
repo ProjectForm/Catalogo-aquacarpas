@@ -40,3 +40,5 @@ const info = await img
   .toFile(saida);
 
 console.log(`OK: /fotos/${nome}.webp  (${info.width}x${info.height}, ${(info.size / 1024).toFixed(0)} KB)`);
+// O catálogo agrupa as fotos dos exemplares por formato; guarde esta proporção em catalogo.ficha.foto_ratio.
+console.log(`foto_ratio: ${(info.width / info.height).toFixed(2)}  (>= 1 horizontal; < 0,6 estreita)`);
