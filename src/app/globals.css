@@ -62,8 +62,8 @@ p { margin: 0; }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
 @media (max-width: 860px) { .hero-grid { grid-template-columns: 1fr; } }
 .hero-foto { display: block; border: 1px solid var(--linha); border-radius: var(--raio); overflow: hidden; background: var(--bg-2); }
-.hero-foto .img { aspect-ratio: 4 / 5; overflow: hidden; background: var(--bg-3); }
-.hero-foto img { width: 100%; height: 100%; object-fit: contain; transition: transform .6s ease; }
+.hero-foto .img { overflow: hidden; background: var(--bg-3); }
+.hero-foto img { display: block; width: 100%; height: auto; max-height: 72vh; object-fit: contain; transition: transform .6s ease; }
 .hero-foto:hover img { transform: scale(1.03); }
 .hero-foto .legenda { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 18px; font-size: 0.86rem; color: var(--suave); }
 .hero-foto .legenda strong { font-family: var(--serif); font-weight: 500; font-size: 1.35rem; color: var(--texto-forte); }
@@ -122,9 +122,9 @@ p { margin: 0; }
 .cartao .foto { position: relative; display: block; aspect-ratio: 5 / 4; background: var(--bg-3); overflow: hidden; }
 .cartao .foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
 .cartao:hover .foto img { transform: scale(1.03); }
-/* Blocos só de exemplares únicos (Nishikigoi): moldura alta e foto inteira, sem cortar cabeça nem cauda. */
-.grade.grande .cartao .foto { aspect-ratio: 3 / 4; }
-.grade.grande .cartao .foto img { object-fit: contain; }
+/* Blocos só de exemplares únicos (Nishikigoi): a moldura acompanha a foto, que aparece inteira, sem cortar cabeça nem cauda. */
+.grade.grande .cartao .foto { aspect-ratio: auto; }
+.grade.grande .cartao .foto img { height: auto; display: block; }
 .cartao .selo { position: absolute; left: 12px; top: 12px; background: rgba(14, 14, 14, 0.82); border: 1px solid var(--linha-forte); color: var(--texto-forte); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 5px 9px; border-radius: 2px; }
 .cartao .corpo { display: flex; flex-direction: column; gap: 10px; padding: 18px 18px 20px; flex: 1; }
 .cartao h3 { font-size: 1.5rem; }
