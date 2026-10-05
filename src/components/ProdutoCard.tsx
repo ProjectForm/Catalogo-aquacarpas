@@ -15,7 +15,7 @@ function meta(p: Produto): string {
 export function ProdutoCard({ produto: p }: { produto: Produto }) {
   const indisponivel = p.status !== "disponivel";
   const selo =
-    p.status === "vendido" ? "Vendido" : p.status === "reservado" ? "Reservado" : p.tipo === "exemplar_unico" ? "Exemplar único" : null;
+    p.status === "vendido" ? "Vendido" : p.status === "reservado" ? "Reservado" : null;
   const linhaMeta = meta(p);
 
   return (

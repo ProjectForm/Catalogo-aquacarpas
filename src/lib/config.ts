@@ -66,7 +66,7 @@ export const POLITICAS = {
   frete: {
     titulo: "Frete",
     texto:
-      "O valor é calculado pela nossa equipe conforme a sua cidade e informado pelo WhatsApp. Frete grátis para São Paulo (capital) em compras acima de R$ 500 e, em qualquer cidade que atendemos, em compras acima de R$ 2.000.",
+      "O valor é calculado pela nossa equipe conforme a sua cidade e informado pelo WhatsApp. Frete grátis em qualquer cidade que atendemos, em compras acima de R$ 2.000.",
   },
   pagamento: {
     titulo: "Pagamento",

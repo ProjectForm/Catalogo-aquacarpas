@@ -88,7 +88,7 @@ export default async function ProdutoPage({ params }: Props) {
       <div className="produto">
         <Galeria imagens={p.imagens} alt={p.nome} />
         <div>
-          <p className="eyebrow">{p.tipo === "exemplar_unico" ? "Exemplar único" : "Vendida por unidade"}</p>
+          {p.tipo === "exemplar_unico" ? null : <p className="eyebrow">Vendida por unidade</p>}
           <h1>
             <NomeProduto nome={p.nome} />
           </h1>
