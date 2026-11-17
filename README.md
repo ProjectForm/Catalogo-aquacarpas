@@ -60,6 +60,15 @@ na Vercel (Root Directory `./`), com as variáveis `NEXT_PUBLIC_SUPABASE_URL`, `
 `NEXT_PUBLIC_SITE_URL`, e ligar o Web Analytics. Depois disso, cada `git push` na `main` publica sozinho. Passo a passo em
 `../PROMPTS/05-catalogo-online.md` (seção "Como publicar"). O repositório é **público**: nunca coloque segredo aqui.
 
+## Commit e push automáticos
+Ao fim de cada resposta do Claude Code neste projeto, o hook `Stop` (`.claude/settings.json`, que chama
+`.claude/hooks/auto-commit-push.sh`) faz commit das alterações e envia para `origin/main`, o que publica o site na Vercel
+sozinho. Só age na branch `main`, nunca usa force push e **se recusa a enviar** se achar `.env`, chave privada, JWT ou chave de
+API nas alterações (o repositório é público). Se o GitHub tiver commits novos, faz rebase; em caso de conflito, não envia e avisa.
+- **Pausar**: crie o arquivo vazio `.claude/PAUSAR_AUTO_PUSH` (fica fora do Git). Retomar: apague o arquivo.
+- **Testar sem commitar**: `AUTO_DRY_RUN=1 bash .claude/hooks/auto-commit-push.sh`.
+- Os commits saem como `Aquacarpas (Claude Code)` com o e-mail *noreply* do GitHub (configurado só neste repositório).
+
 ## Segurança
 - A chave `anon` do Supabase é pública por natureza. A `service_role` **nunca** entra aqui.
 - O RLS do banco só libera leitura dos itens ativos do catálogo. Tudo o mais passa pela função `catalogo-api`.
