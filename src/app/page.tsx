@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { CategoriaNav } from "@/components/CategoriaNav";
+import { ContagemRegressiva } from "@/components/ContagemRegressiva";
 import { NomeProduto } from "@/components/NomeProduto";
 import { ProdutoCard } from "@/components/ProdutoCard";
+import { RevelarAoRolar } from "@/components/RevelarAoRolar";
 import { TrackView } from "@/components/TrackView";
 import { listarSecoes, type Produto } from "@/lib/catalogo";
-import { POLITICAS, SITE } from "@/lib/config";
+import { BLACK_FRIDAY, blackFridayAtiva, POLITICAS, SITE } from "@/lib/config";
 import { brl } from "@/lib/format";
 
 export const revalidate = 60;
@@ -24,19 +26,24 @@ export default async function Home() {
   const secoes = await listarSecoes();
   // O peixe em destaque do topo é o primeiro item marcado com destaque=true e disponível no banco.
   const destaque = secoes.flatMap((s) => s.produtos).find((p) => p.destaque && p.status === "disponivel" && p.imagens[0]);
+  // Campanha vigente (a página se refaz a cada 60 s; passado o prazo, volta sozinha ao visual normal).
+  const bf = blackFridayAtiva();
 
   return (
     <>
       <TrackView />
-      <section className="hero">
+      {bf ? <RevelarAoRolar /> : null}
+      <section className={`hero${bf ? " hero-bf" : ""}`}>
         <div className="container hero-grid">
           <div>
             <p className="eyebrow">{SITE.nome} · {SITE.cidade}</p>
-            <h1>{SITE.tagline}</h1>
+            <h1>{bf ? BLACK_FRIDAY.heroTitulo : SITE.tagline}</h1>
             <p className="sub">
-              Carpas Nishikigoi criadas e selecionadas com cuidado. Mais de 10 anos de convivência com carpas e mais de 7 levando
-              peixes para o lago dos nossos clientes.
+              {bf
+                ? BLACK_FRIDAY.heroTexto
+                : "Carpas Nishikigoi criadas e selecionadas com cuidado. Mais de 10 anos de convivência com carpas e mais de 7 levando peixes para o lago dos nossos clientes."}
             </p>
+            {bf ? <ContagemRegressiva /> : null}
             <div className="acoes">
               <a href="#catalogo" className="btn btn-primario">Ver o catálogo</a>
               <Link href="/entrega" className="btn btn-contorno">Como funciona a entrega</Link>

@@ -13,6 +13,12 @@ interface Ultimo {
   tipo: "pedido" | "cadastro";
   entrega_tipo?: "envio" | "transportadora" | "retirada";
   total: number | null;
+  /** Campos do cupom (Black Friday): vêm da função catalogo-api; ausentes em pedidos antigos ou sem cupom. */
+  total_original?: number | null;
+  total_final?: number | null;
+  desconto?: number | null;
+  cupom?: string | null;
+  percentual?: number | null;
   itens: { codigo: string; nome: string; quantidade: number; subtotal: number }[];
   whatsapp_url: string | null;
 }
@@ -83,7 +89,24 @@ function Conteudo() {
                 {i.quantidade}x {i.nome} — {brl(i.subtotal)}
               </p>
             ))}
-            {u.total !== null ? <p style={{ marginTop: 8, color: "var(--texto-forte)" }}>Total dos peixes: {brl(u.total)} (frete não incluso)</p> : null}
+            {u.cupom && u.desconto && u.desconto > 0 ? (
+              <div className="subtotais" style={{ marginTop: 10 }}>
+                <div>
+                  <span>Subtotal</span>
+                  <span>{brl(u.total_original ?? (u.total ?? 0) + u.desconto)}</span>
+                </div>
+                <div className="desconto">
+                  <span>Cupom {u.cupom}{u.percentual ? ` · ${u.percentual}%` : ""}</span>
+                  <span>−{brl(u.desconto)}</span>
+                </div>
+              </div>
+            ) : null}
+            {u.total_final != null || u.total !== null ? (
+              <div className={`total${u.cupom ? " destaque" : ""}`} style={{ marginTop: 10 }}>
+                <span>Total dos peixes <small className="suave">(frete não incluso)</small></span>
+                <strong>{brl((u.total_final ?? u.total) as number)}</strong>
+              </div>
+            ) : null}
           </div>
         ) : null}
 

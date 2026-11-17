@@ -10,6 +10,7 @@ import type { Restricao, TipoEntrega } from "@/lib/entrega";
 import { ESTADOS, brl, documentoValido, mascaraCep, mascaraDocumento, mascaraTelefone, somenteDigitos } from "@/lib/format";
 import { capturarUtm, evento, sessaoId, utmAtual } from "@/lib/tracking";
 import { useCart } from "./CartProvider";
+import { CupomCarrinho } from "./CupomCarrinho";
 
 interface Dados {
   nome: string;
@@ -39,7 +40,7 @@ const VAZIO: Dados = {
 
 export function EntregaForm() {
   const router = useRouter();
-  const { itens, total, pronto, definirQuantidade, remover, limpar } = useCart();
+  const { itens, total, pronto, definirQuantidade, remover, limpar, bf, cupom, cupomCodigo, verificandoCupom, mensagemCupom, removerCupom } = useCart();
   const [d, setD] = useState<Dados>(VAZIO);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -118,10 +119,18 @@ export function EntregaForm() {
             bairro: d.bairro, cidade: d.cidade, uf: d.uf, referencia: d.referencia,
           },
           itens: itens.map((i) => ({ codigo: i.codigo, quantidade: i.quantidade })),
+          // O servidor confere o cupom de novo e recalcula o desconto; o navegador só informa o código.
+          cupom: bf && cupomCodigo && itens.length > 0 ? cupomCodigo : undefined,
         }),
       });
       const j = await r.json().catch(() => null);
       if (!r.ok || !j?.ok) {
+        if (typeof j?.erro === "string" && j.erro.startsWith("cupom_")) {
+          // Cupom recusado (ex.: expirou): tira do pedido e deixa a pessoa decidir com o total sem desconto na tela.
+          removerCupom();
+          setErro(`${j.mensagem} Retiramos o cupom do pedido: confira o total e envie de novo se quiser seguir sem o desconto.`);
+          return;
+        }
         setErro(j?.mensagem ?? "Não foi possível enviar agora. Tente novamente ou fale com a gente pelo WhatsApp.");
         return;
       }
@@ -312,6 +321,7 @@ export function EntregaForm() {
           </>
         ) : (
           <>
+            <CupomCarrinho />
             {itens.map((i) => {
               const unit = precoUnitario(i, i.quantidade);
               return (
@@ -339,10 +349,29 @@ export function EntregaForm() {
                 </div>
               );
             })}
-            <div className="total">
-              <span>Total dos peixes</span>
-              <strong>{brl(total)}</strong>
-            </div>
+            {bf && cupom ? (
+              <>
+                <div className="subtotais">
+                  <div>
+                    <span>Subtotal</span>
+                    <span>{brl(cupom.total_original)}</span>
+                  </div>
+                  <div className="desconto">
+                    <span>Cupom {cupom.codigo} · {cupom.percentual}%</span>
+                    <span>−{brl(cupom.desconto)}</span>
+                  </div>
+                </div>
+                <div className="total destaque">
+                  <span>Total dos peixes</span>
+                  <strong>{brl(cupom.total_final)}</strong>
+                </div>
+              </>
+            ) : (
+              <div className={`total${bf && cupomCodigo && (verificandoCupom || !mensagemCupom) ? " atualizando" : ""}`} aria-busy={verificandoCupom}>
+                <span>Total dos peixes</span>
+                <strong>{brl(total)}</strong>
+              </div>
+            )}
             <p className="nota">
               Frete não incluso: nossa equipe informa o valor pelo WhatsApp. Depois de enviar, confirmamos disponibilidade, frete e
               pagamento com você.

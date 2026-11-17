@@ -10,6 +10,28 @@ export const SITE_URL = (producao ? `https://${producao}` : (process.env.NEXT_PU
 
 export const API_URL = `${SUPABASE_URL}/functions/v1/catalogo-api`;
 
+/**
+ * Campanha Black Friday 2026. TUDO que é visual (faixa, hero, contagem, animações, aviso e campo de cupom no carrinho)
+ * depende de `blackFridayAtiva()` e some sozinho depois de `fim`, sem novo deploy. O desconto em si é decidido pelo
+ * servidor (tabela `cupons` do Supabase): depois do prazo a função rejeita o cupom mesmo que alguém tente.
+ * Para mudar prazo ou desativar: atualize `cupons.valido_ate` / `cupons.ativo` no banco E o `fim` abaixo.
+ */
+export const BLACK_FRIDAY = {
+  cupom: "BLACK30",
+  percentual: 30,
+  /** 30/11/2026 23:59:59 em Brasília (UTC-3, sem horário de verão). */
+  fim: "2026-11-30T23:59:59-03:00",
+  fimTexto: "30/11",
+  fimTextoLongo: "30 de novembro",
+  faixa: "Black Friday: cupom BLACK30, 30% em qualquer carpa do site, até 30/11.",
+  heroTitulo: "Black Friday Aquacarpas",
+  heroTexto: "Cupom BLACK30: 30% de desconto em qualquer carpa, até 30 de novembro.",
+} as const;
+
+export function blackFridayAtiva(agora: number = Date.now()): boolean {
+  return agora <= Date.parse(BLACK_FRIDAY.fim);
+}
+
 export const SITE = {
   nome: "Aquacarpas",
   tagline: "Joias vivas para o seu lago",

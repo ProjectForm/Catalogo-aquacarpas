@@ -246,5 +246,86 @@ p { margin: 0; }
 .passos li { counter-increment: p; display: grid; grid-template-columns: 34px 1fr; gap: 14px; color: var(--suave); }
 .passos li::before { content: counter(p); font-family: var(--serif); font-size: 1.5rem; color: var(--acento); line-height: 1.2; }
 
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
+
+/* ====================================================================================================================
+   Black Friday 2026 (campanha com prazo: componentes só são renderizados enquanto blackFridayAtiva() for verdadeiro).
+   Linguagem visual: minimalista, muito espaço, tipografia grande e limpa, sem contorno em texto, sem bordas pesadas.
+   Verde do desconto: #7bd3a0 sobre o fundo escuro dá cerca de 10:1 de contraste (acima do AA).
+   ==================================================================================================================== */
+:root {
+  --verde: #7bd3a0;
+  --verde-fundo: rgba(123, 211, 160, 0.09);
+}
+
+/* faixa fina no topo (rola junto com a página; o cabeçalho continua fixo) */
+.faixa-bf { background: #171412; text-align: center; font-size: 0.76rem; letter-spacing: 0.03em; line-height: 1.45; }
+.faixa-bf a { display: block; padding: 9px 20px; color: var(--texto); text-wrap: balance; transition: color .2s; }
+.faixa-bf a:hover { color: var(--texto-forte); }
+
+/* hero: título grande, contagem regressiva e um gradiente muito lento ao fundo */
+.hero-bf { position: relative; overflow: hidden; isolation: isolate; }
+.hero-bf::before {
+  content: ""; position: absolute; inset: -25% -10%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(46% 55% at 16% 28%, rgba(232, 90, 44, 0.17), transparent 70%),
+    radial-gradient(38% 50% at 84% 72%, rgba(242, 234, 214, 0.07), transparent 72%);
+  animation: bf-deriva 28s ease-in-out infinite alternate; will-change: transform;
+}
+@keyframes bf-deriva {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to { transform: translate3d(3%, 2%, 0) scale(1.1); }
+}
+.hero-bf h1 { font-size: clamp(2.9rem, 8.4vw, 5.8rem); max-width: 12ch; text-wrap: balance; letter-spacing: -0.012em; }
+.hero-bf .sub { font-size: 1.12rem; }
+
+.contagem { display: flex; gap: clamp(22px, 4.5vw, 42px); margin-top: 30px; font-variant-numeric: tabular-nums; min-height: 3.9rem; }
+.contagem > div { display: flex; flex-direction: column; gap: 6px; min-width: 2.2ch; }
+.contagem .num { font: 300 clamp(2.1rem, 5.6vw, 3.1rem)/1 var(--sans); letter-spacing: -0.025em; color: var(--texto-forte); }
+.contagem .rot { font-size: 0.66rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--suave); }
+
+/* entrada suave ao rolar (só opacidade + 14 px de deslocamento: não mexe no layout) */
+.rv-pre { opacity: 0; transform: translateY(14px); }
+.rv-pre.rv-vis {
+  opacity: 1; transform: none;
+  transition: opacity .8s cubic-bezier(.2, .65, .2, 1) var(--rv-atraso, 0ms), transform .8s cubic-bezier(.2, .65, .2, 1) var(--rv-atraso, 0ms), border-color .2s;
+}
+
+/* página do peixe */
+.bf-nota { margin-top: 12px; font-size: 0.9rem; color: var(--verde); }
+
+/* cupom no resumo do pedido */
+.cupom-bloco { margin: 0 0 20px; padding-bottom: 20px; border-bottom: 1px solid var(--linha); }
+.cupom-bloco .eyebrow { font-size: 0.68rem; }
+.cupom-aviso { margin-top: 8px; font-size: 0.96rem; line-height: 1.5; color: var(--texto); }
+.cupom-aviso strong { color: var(--texto-forte); font-weight: 600; letter-spacing: 0.05em; }
+.cupom-form { display: flex; gap: 8px; margin-top: 16px; }
+.cupom-form input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--linha-forte); color: var(--texto-forte); border-radius: var(--raio); padding: 11px 12px; font: 400 0.95rem var(--sans); letter-spacing: 0.06em; }
+.cupom-form input::placeholder { letter-spacing: 0; color: var(--suave); }
+.cupom-form input:focus { outline: none; border-color: var(--acento); box-shadow: 0 0 0 3px rgba(232, 90, 44, 0.22); }
+.cupom-form .btn { padding: 11px 18px; }
+.cupom-usar { margin-top: 12px; background: none; border: 0; padding: 0; color: var(--suave); font: inherit; font-size: 0.84rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.cupom-usar:hover { color: var(--texto-forte); }
+.cupom-erro { margin-top: 12px; color: var(--erro); font-size: 0.88rem; }
+.cupom-ok { margin: 0 0 18px; padding: 14px 16px 16px; border-radius: var(--raio); background: var(--verde-fundo); }
+.cupom-ok-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.cupom-ok-titulo { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--verde); }
+.cupom-ok .remover { margin-left: 0; }
+.cupom-economia { margin-top: 6px; font-size: 1rem; color: var(--verde); }
+.cupom-economia strong { font-weight: 600; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.cupom-economia.suave { color: var(--suave); font-size: 0.9rem; }
+
+.subtotais { display: grid; gap: 6px; border-top: 1px solid var(--linha); padding-top: 14px; margin-top: 4px; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+.subtotais > div { display: flex; justify-content: space-between; gap: 12px; color: var(--suave); }
+.subtotais .desconto { color: var(--verde); font-weight: 500; }
+.total.destaque { flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 12px; }
+.total.destaque > span { font-size: 0.82rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--suave); }
+.total.destaque strong { font-size: clamp(2.6rem, 7vw, 3.2rem); line-height: 1.05; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.total.atualizando strong { opacity: 0.5; }
+.suave { color: var(--suave); }
+.barra-pedido .info .com-cupom { display: block; font-size: 0.72rem; color: var(--verde); margin-top: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  .rv-pre { opacity: 1; transform: none; }
+}

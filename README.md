@@ -38,6 +38,31 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
      secret `WHATSAPP_ATENDIMENTO` (padrão `5517981516665`).
   Para parar o aviso: mande `Stop` ao CallMeBot pelo WhatsApp ou apague o secret `CALLMEBOT_APIKEY`.
 
+## Black Friday 2026 e cupons
+- **Cupom BLACK30**: 30% sobre o total do pedido (já com a promoção por item, quando houver), em qualquer carpa do site,
+  até **30/11/2026 23:59:59 (Brasília)**. Fonte da verdade no **servidor**: tabela `cupons` (RLS ligada, sem política pública,
+  só a função `catalogo-api` lê). O navegador nunca decide preço: a ação `cupom` da função só **calcula** (não grava nem avisa
+  ninguém) e a ação `pedido` recalcula tudo e grava `vendas.cupom`, `vendas.desconto` e `vendas.valor_total` (= total final).
+  O desconto aparece na mensagem do WhatsApp do cliente, no aviso da equipe (CallMeBot) e em `/obrigado`.
+- **Mudar ou desativar**: `update cupons set ativo = false where codigo = 'BLACK30';` (para na hora) ou
+  `update cupons set valido_ate = '2026-12-05 23:59:59-03' where codigo = 'BLACK30';`. Cupom novo: `insert into cupons`
+  (código em maiúsculas, `percentual`, `valido_ate`). O visual e o campo do cupom no carrinho seguem a data `BLACK_FRIDAY.fim`
+  em `src/lib/config.ts`: se mudar o prazo no banco, mude lá também.
+- **Visual da campanha** (faixa no topo, hero com contagem regressiva, entrada suave dos cards, aviso e campo do cupom no
+  carrinho, nota na página do peixe) é controlado só por `blackFridayAtiva()` em `src/lib/config.ts` e **some sozinho** depois
+  de `fim`: o layout se refaz a cada 60 s. Os textos da campanha ficam em `BLACK_FRIDAY` (mesmo arquivo). Animações respeitam
+  `prefers-reduced-motion` e não usam bibliotecas.
+- **Preços do reajuste** (+10% no mais caro a +16,7% no mais barato, escala logarítmica): os valores de antes ficam em
+  `catalogo_precos_backup_20261117` (RLS ligada, sem acesso público). Para **reverter**:
+  `update catalogo c set preco = b.preco_antigo, preco_promocional = b.preco_promocional_antigo, atualizado_em = now() from catalogo_precos_backup_20261117 b where b.codigo = c.codigo and b.preco_novo is not null;`
+  A ordem antiga das abas: Nishikigoi Ultra Premium 5, Nishikigoi (inativa) 10, Koi selecionadas 20, Carpas coloridas 30,
+  Kinguios cometas 40 (`catalogo_categorias.ordem`).
+- **Função `catalogo-api`**: o código que roda no Supabase tem uma cópia versionada em `supabase/functions/catalogo-api/index.ts`
+  (fora do build do Next: `supabase` está no `exclude` do `tsconfig.json`). Mudou lá? Publique no Supabase (verify_jwt desligado)
+  e mantenha as duas versões iguais.
+- O cupom não aparece como "de R$ X por R$ Y": cards e página do peixe mostram só o preço de tabela vigente; o desconto
+  aparece no carrinho. A promoção por item que já existia (`preco_promocional`) continua como antes.
+
 ## Rodar no computador
 Precisa de Node 20.9 ou superior.
 ```
@@ -71,6 +96,7 @@ API nas alterações (o repositório é público). Se o GitHub tiver commits nov
 
 ## Segurança
 - A chave `anon` do Supabase é pública por natureza. A `service_role` **nunca** entra aqui.
-- O RLS do banco só libera leitura dos itens ativos do catálogo. Tudo o mais passa pela função `catalogo-api`.
+- O RLS do banco só libera leitura dos itens ativos do catálogo. Tudo o mais passa pela função `catalogo-api`
+  (a tabela `cupons` e o backup de preços não têm política pública).
 - O formulário tem campo isca (honeypot) e limite de pedidos por telefone/hora.
 - Sem emoji e sem texto de venda agressivo: a marca é high ticket (`../conhecimento/marca.md`).

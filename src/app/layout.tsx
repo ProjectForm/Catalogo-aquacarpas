@@ -3,11 +3,16 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CartBar } from "@/components/CartBar";
 import { CartProvider } from "@/components/CartProvider";
+import { FaixaBlackFriday } from "@/components/FaixaBlackFriday";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { WhatsAppFlutuante } from "@/components/WhatsAppFlutuante";
-import { SITE, SITE_URL } from "@/lib/config";
+import { blackFridayAtiva, SITE, SITE_URL } from "@/lib/config";
 import "./globals.css";
+
+// Todas as páginas se refazem a cada 60 s: é assim que a faixa da Black Friday some sozinha depois do prazo,
+// inclusive nas páginas sem dados do banco (/entrega, /obrigado).
+export const revalidate = 60;
 
 const serif = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600"], variable: "--font-serif", display: "swap" });
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -30,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR" className={`${serif.variable} ${sans.variable}`}>
       <body>
         <CartProvider>
+          <FaixaBlackFriday ativa={blackFridayAtiva()} />
           <Header />
           <main>{children}</main>
           <Footer />
