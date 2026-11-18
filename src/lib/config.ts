@@ -92,7 +92,8 @@ export const POLITICAS = {
   },
   pagamento: {
     titulo: "Pagamento",
-    texto: "Pix ou cartão (Mercado Pago, com juros). O pagamento é combinado com a nossa equipe pelo WhatsApp.",
+    texto:
+      "Em pedidos a partir de R$ 500 você paga direto aqui no site: Pix ou, pela InfinitePay, cartão de crédito (parcelado, com juros) ou Pix. Nos demais casos, o pagamento é combinado com a nossa equipe pelo WhatsApp.",
   },
 } as const;
 

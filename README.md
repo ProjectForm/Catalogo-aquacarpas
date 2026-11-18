@@ -76,14 +76,16 @@ Tudo é calculado e decidido **no servidor** (Edge Function `catalogo-api`); o n
   polo de uma cidade: `update municipios_atendimento set polo_ibge = '<ibge da cidade polo>' where ibge = '<ibge>'`. Outros estados: sem
   checkout online, a equipe combina pelo WhatsApp. O CEP é consultado no ViaCEP pelo servidor (usa o IBGE do CEP; se o ViaCEP falhar, usa
   cidade e estado do formulário). A regra dos 200 mil habitantes nunca aparece no catálogo.
-- **Pagamento online** (desligado até configurar): `config_loja`, chave `pagamento`:
+- **Pagamento online** (ligado em 17/11/2026, com Pix e InfinitePay; para pausar: `update config_loja set valor = jsonb_set(valor, '{checkout_online_ativo}', 'false') where chave = 'pagamento';`
+  e os pedidos voltam ao fluxo de WhatsApp na hora): `config_loja`, chave `pagamento`:
   `{"checkout_online_ativo": true, "reserva_minutos": 60, "pix": {"chave": "...", "nome": "...", "cidade": "..."}, "infinitepay": {"handle": "..."}}`.
   O pedido vai para `/pagamento?n=<número>&t=<token>` (token secreto em `vendas.token_publico`; cada cliente só vê o próprio pedido).
   - **Pix**: código "copia e cola" e QR com o valor **exato** (frete e cupom incluídos), gerado no servidor com o número do pedido como
     identificador. Pix estático **não avisa quando é pago**: a equipe confere no banco e confirma com
     `update vendas set status = 'pago', pago_em = now() where numero = <n>;`. O botão "Já fiz o pagamento" só avisa a equipe pelo CallMeBot.
-  - **InfinitePay**: link de checkout (cartão e Pix) criado pela API `api.checkout.infinitepay.io`, que exige ativar o **checkout externo** na
-    conta (app InfinitePay > Configurações). O webhook (`catalogo-api?hook=infinitepay`) não é assinado, então a confirmação sempre passa
+  - **InfinitePay**: link de checkout (cartão e Pix) criado pela API `api.checkout.infinitepay.io` (sem API Key; basta o handle, que é a
+    InfiniteTag sem o `$`), que exige o **Checkout Integrado** ligado na conta (app InfinitePay > Checkout Integrado > Configurações). Dica:
+    desligar lá a "Etapa de endereço", porque o endereço já foi informado no catálogo. O webhook (`catalogo-api?hook=infinitepay`) não é assinado, então a confirmação sempre passa
     pelo `payment_check` e só vale se o valor (`amount`) for o do pedido; ao voltar para a loja o cliente também dispara essa conferência.
   - **Estoque**: quando o pedido vira `pago` (webhook, conferência ou o `update` acima), o gatilho `vendas_baixa_estoque` marca o
     exemplar único como `vendido` (e baixa a quantidade dos itens com controle de estoque). Enquanto o cliente paga, o exemplar fica reservado
