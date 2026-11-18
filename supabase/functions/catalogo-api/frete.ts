@@ -4,12 +4,40 @@
 //  - frete grátis a partir de um subtotal (aqui: o valor dos peixes já com o desconto do cupom).
 // Lógica pura, sem dependências: roda no Deno (Supabase) e no Node (testes em logica.test.ts).
 
+/**
+ * Zona de frete: um conjunto de cidades com regras PRÓPRIAS (valor da caixa, frete grátis e pedido mínimo), que valem no
+ * lugar da tabela por estado. Entra por lista de códigos IBGE (`municipios`) e/ou por raio a partir de São José do Rio
+ * Preto (`raio_km`, em linha reta; a distância de cada município fica em municipios_atendimento.distancia_rp_km).
+ */
+export interface ZonaFrete {
+  nome: string;
+  municipios?: string[]; // códigos IBGE de 7 dígitos
+  raio_km?: number;
+  custo_por_caixa: number; // R$ por caixa
+  gratis_a_partir: number; // R$ (valor dos peixes já com o cupom)
+  pedido_minimo_online: number; // R$ (preço de tabela, antes do cupom)
+}
+
 export interface RegrasFrete {
   capacidade_caixa: number; // unidades de volume por caixa (15)
-  gratis_a_partir: number; // R$
-  pedido_minimo_online: number; // R$ (sobre o preço de tabela, antes do cupom)
+  gratis_a_partir: number; // R$ (cidades fora das zonas)
+  pedido_minimo_online: number; // R$ (sobre o preço de tabela, antes do cupom; cidades fora das zonas)
   custo_por_caixa: Record<string, number>; // UF -> R$ por caixa
   custo_padrao: number; // UF sem valor definido
+  zonas?: ZonaFrete[]; // opcional; lista por IBGE vence o raio; entre raios, o menor
+}
+
+/** Zona de frete da cidade, ou null (vale a tabela por estado). `distanciaKm` = distância até Rio Preto, se conhecida. */
+export function escolherZona(ibge: string, distanciaKm: number | null, regras: RegrasFrete): ZonaFrete | null {
+  const zonas = regras.zonas ?? [];
+  const porLista = zonas.find((z) => z.municipios?.includes(ibge));
+  if (porLista) return porLista;
+  if (distanciaKm === null || !Number.isFinite(distanciaKm)) return null;
+  const porRaio = zonas
+    .filter((z) => typeof z.raio_km === "number")
+    .sort((a, b) => (a.raio_km as number) - (b.raio_km as number))
+    .find((z) => distanciaKm <= (z.raio_km as number));
+  return porRaio ?? null;
 }
 
 /** "22-23" -> 22,5; "30" -> 30; 14 -> 14; sem informação -> null. */
@@ -61,10 +89,19 @@ export interface ResultadoFrete {
   gratis: boolean;
 }
 
-/** `subtotalFinal` = valor dos peixes já com o desconto do cupom (base do frete grátis). */
-export function calcularFrete(itens: ItemFrete[], uf: string, subtotalFinal: number, regras: RegrasFrete): ResultadoFrete {
+/**
+ * `subtotalFinal` = valor dos peixes já com o desconto do cupom (base do frete grátis). Com `zona`, valem o valor da caixa e o
+ * frete grátis dela; sem zona, a tabela por estado e o frete grátis geral.
+ */
+export function calcularFrete(
+  itens: ItemFrete[],
+  uf: string,
+  subtotalFinal: number,
+  regras: RegrasFrete,
+  zona: ZonaFrete | null = null,
+): ResultadoFrete {
   const caixas = calcularCaixas(itens, regras.capacidade_caixa);
-  const custo_caixa = custoPorCaixa(uf, regras);
-  const gratis = subtotalFinal >= regras.gratis_a_partir;
+  const custo_caixa = zona ? zona.custo_por_caixa : custoPorCaixa(uf, regras);
+  const gratis = subtotalFinal >= (zona ? zona.gratis_a_partir : regras.gratis_a_partir);
   return { caixas, custo_caixa, frete: gratis ? 0 : Math.round(caixas * custo_caixa * 100) / 100, gratis };
 }

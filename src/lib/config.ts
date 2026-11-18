@@ -88,12 +88,12 @@ export const POLITICAS = {
   frete: {
     titulo: "Frete",
     texto:
-      "Em pedidos a partir de R$ 500 o frete é calculado aqui mesmo, pelo CEP, e aparece no resumo do pedido. Nos demais casos, a nossa equipe informa o valor pelo WhatsApp. Frete grátis em qualquer cidade que atendemos, em compras acima de R$ 2.000 (valor dos peixes já com o desconto de cupons).",
+      "O frete é calculado aqui mesmo, pelo CEP, e aparece no resumo do pedido. Na região de São José do Rio Preto o frete é de R$ 60 por caixa, para pedidos a partir de R$ 200: grátis a partir de R$ 200 em São José do Rio Preto e Mirassol e a partir de R$ 1.200 nas demais cidades da região. Nas outras cidades que atendemos, o frete é calculado em pedidos a partir de R$ 500 e é grátis em compras acima de R$ 2.000. Os limites consideram o valor dos peixes já com o desconto de cupons. Nos demais casos, a nossa equipe informa o frete pelo WhatsApp.",
   },
   pagamento: {
     titulo: "Pagamento",
     texto:
-      "Em pedidos a partir de R$ 500 você paga direto aqui no site: Pix ou, pela InfinitePay, cartão de crédito (parcelado, com juros) ou Pix. Nos demais casos, o pagamento é combinado com a nossa equipe pelo WhatsApp.",
+      "Quando o frete aparece calculado no resumo do pedido, você paga direto aqui no site: Pix ou, pela InfinitePay, cartão de crédito (parcelado, com juros) ou Pix. Nos demais casos, o pagamento é combinado com a nossa equipe pelo WhatsApp.",
   },
 } as const;
 

@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { crc16, gerarPix } from "./pix.ts";
-import { calcularCaixas, calcularFrete, milesimosDeVolume, tamanhoMedioCm } from "./frete.ts";
+import { calcularCaixas, calcularFrete, escolherZona, milesimosDeVolume, tamanhoMedioCm } from "./frete.ts";
 import type { RegrasFrete } from "./frete.ts";
 
 const regras: RegrasFrete = {
@@ -12,7 +12,36 @@ const regras: RegrasFrete = {
   pedido_minimo_online: 500,
   custo_por_caixa: { SP: 95, MG: 125, MS: 125, PR: 125 },
   custo_padrao: 125,
+  zonas: [
+    { nome: "regional", raio_km: 135, custo_por_caixa: 60, gratis_a_partir: 1200, pedido_minimo_online: 200 },
+    { nome: "local", municipios: ["3549805", "3530300"], custo_por_caixa: 60, gratis_a_partir: 200, pedido_minimo_online: 200 },
+  ],
 };
+const semZonas: RegrasFrete = { ...regras, zonas: undefined };
+
+test("zonas: lista de municípios (local) vence o raio (regional); raio vale até o limite; fora = nenhuma", () => {
+  assert.equal(escolherZona("3549805", 0, regras)?.nome, "local"); // Rio Preto
+  assert.equal(escolherZona("3530300", 15.7, regras)?.nome, "local"); // Mirassol
+  assert.equal(escolherZona("3511102", 55.4, regras)?.nome, "regional"); // Catanduva
+  assert.equal(escolherZona("3502804", 131.2, regras)?.nome, "regional"); // Araçatuba
+  assert.equal(escolherZona("3518602", 134.9, regras)?.nome, "regional");
+  assert.equal(escolherZona("3518602", 135, regras)?.nome, "regional"); // no limite
+  assert.equal(escolherZona("3556958", 135.3, regras), null); // logo depois do raio
+  assert.equal(escolherZona("3550308", null, regras), null); // distância desconhecida (ex.: São Paulo)
+  assert.equal(escolherZona("3511102", 55.4, semZonas), null); // sem zonas configuradas: tabela por estado
+});
+
+test("frete em zona: R$ 60 por caixa; grátis a partir de 200 (local) e de 1200 (regional)", () => {
+  const itens = [{ tamanho_medio_cm: 30, quantidade: 4 }]; // 2 caixas
+  const local = escolherZona("3549805", 0, regras);
+  const regional = escolherZona("3511102", 55.4, regras);
+  assert.deepEqual(calcularFrete(itens, "SP", 199.99, regras, local), { caixas: 2, custo_caixa: 60, frete: 120, gratis: false });
+  assert.deepEqual(calcularFrete(itens, "SP", 200, regras, local), { caixas: 2, custo_caixa: 60, frete: 0, gratis: true });
+  assert.deepEqual(calcularFrete(itens, "SP", 1199.99, regras, regional), { caixas: 2, custo_caixa: 60, frete: 120, gratis: false });
+  assert.deepEqual(calcularFrete(itens, "MG", 1200, regras, regional), { caixas: 2, custo_caixa: 60, frete: 0, gratis: true });
+  // sem zona continua igual: SP 95 por caixa e grátis só a partir de 2000
+  assert.deepEqual(calcularFrete(itens, "SP", 1500, regras, null), { caixas: 2, custo_caixa: 95, frete: 190, gratis: false });
+});
 
 test("CRC16/CCITT-FALSE: vetor padrão '123456789' = 29B1", () => {
   assert.equal(crc16("123456789"), "29B1");

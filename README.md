@@ -67,12 +67,21 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
 Tudo é calculado e decidido **no servidor** (Edge Function `catalogo-api`); o navegador só mostra. Código da função em
 `supabase/functions/catalogo-api/` (`index.ts`, `frete.ts`, `pix.ts`); testes da lógica pura: `node --test supabase/functions/catalogo-api/logica.test.ts`.
 - **Frete (já ativo)**: caixas = teto(volume ÷ 15), igual ao site principal (8-12 cm = 1; 12-15 = 1,5; 15-17 = 1,875; 18-21 = 3;
-  23-27 = 5; 28-32 = 7,5; 33+ = 15; tamanho entre duas faixas cai na de cima). Valor por caixa por estado em `config_loja`
-  (chave `frete`: SP 95; MG, MS, PR, DF 125; GO, RJ, SC, RS, MT 150). **Frete grátis** a partir de R$ 2.000 já **com o desconto do
-  cupom**. **Pedido mínimo** de R$ 500 (preço de tabela, antes do cupom) para calcular frete e pagar online; abaixo disso o fluxo é o
-  de antes (WhatsApp, frete a combinar). Tudo editável em `config_loja` (sem deploy).
-- **Cidades atendidas**: tabela `municipios_atendimento` (SP, MG, PR e MS, população do Censo 2022 do IBGE). Mais de 200 mil habitantes
-  = entrega em casa. Menor = retirada na cidade-polo mais próxima em linha reta (`polo_ibge`; o frete é o do estado do polo). Para trocar o
+  23-27 = 5; 28-32 = 7,5; 33+ = 15; tamanho entre duas faixas cai na de cima). Tudo em `config_loja`, chave `frete` (editável sem deploy).
+  O frete depende do **CEP**, em três faixas:
+  1. **Zona local** (`zonas`, nome `local`, por código IBGE: São José do Rio Preto e Mirassol): R$ 60 por caixa, **grátis a partir de R$ 200**,
+     pedido mínimo R$ 200.
+  2. **Zona regional** (nome `regional`, raio de **135 km em linha reta** de Rio Preto, cerca de 148 cidades, inclusive Araçatuba, Frutal e
+     Fronteira): R$ 60 por caixa, **grátis a partir de R$ 1.200**, pedido mínimo R$ 200. A distância de cada município está em
+     `municipios_atendimento.distancia_rp_km` (centroides do IBGE; 135 km em linha reta equivale a cerca de 160 km por estrada).
+  3. **Demais cidades**: tabela por estado (SP 95; MG, MS, PR, DF 125; GO, RJ, SC, RS, MT 150 por caixa), **grátis a partir de R$ 2.000** e
+     pedido mínimo de R$ 500.
+  Em todas, o pedido mínimo olha o preço de tabela (antes do cupom) e o frete grátis olha o valor dos peixes **já com o desconto do cupom**.
+  Abaixo do mínimo o fluxo é o de antes (WhatsApp, frete a combinar). Para mudar o raio, o valor ou os limites: `update config_loja set valor =
+  jsonb_set(valor, '{zonas,1,raio_km}', '150') where chave = 'frete';` (a posição 0 é a zona local, a 1 é a regional).
+- **Cidades atendidas**: tabela `municipios_atendimento` (SP, MG, PR e MS, população do Censo 2022 do IBGE). Cidade numa zona de frete ou com
+  mais de 200 mil habitantes = entrega em casa. Menor e fora das zonas = retirada na cidade-polo mais próxima em linha reta (`polo_ibge`; o
+  frete é o do estado do polo, com a tabela e o mínimo das demais cidades). Para trocar o
   polo de uma cidade: `update municipios_atendimento set polo_ibge = '<ibge da cidade polo>' where ibge = '<ibge>'`. Outros estados: sem
   checkout online, a equipe combina pelo WhatsApp. O CEP é consultado no ViaCEP pelo servidor (usa o IBGE do CEP; se o ViaCEP falhar, usa
   cidade e estado do formulário). A regra dos 200 mil habitantes nunca aparece no catálogo.

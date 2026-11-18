@@ -27,9 +27,8 @@
 //  - Pagamento confirmado (status 'pago' / pago_em): o gatilho vendas_baixa_estoque marca exemplar único como 'vendido'.
 //  - Configuração (frete, chave Pix, handle da InfinitePay, liga/desliga) fica na tabela config_loja, nunca no código.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { calcularFrete } from "./frete.ts";
-import type { RegrasFrete, ResultadoFrete } from "./frete.ts";
-import { tamanhoMedioCm } from "./frete.ts";
+import { calcularFrete, escolherZona, tamanhoMedioCm } from "./frete.ts";
+import type { RegrasFrete, ResultadoFrete, ZonaFrete } from "./frete.ts";
 import { gerarPix } from "./pix.ts";
 
 const supabase = createClient(
@@ -396,6 +395,8 @@ interface Destino {
   cidade: string;
   uf: string;
   polo?: { nome: string; uf: string; ibge: string };
+  /** Zona de frete da cidade (local ou raio de Rio Preto): valor da caixa, frete grátis e mínimo próprios. null = tabela por estado. */
+  zona?: ZonaFrete | null;
 }
 
 const UFS_ATENDIDAS = new Set(["SP", "MG", "PR", "MS"]);
@@ -404,13 +405,14 @@ const semAcento = (s: string) =>
 
 /**
  * Descobre a cidade pelo CEP (ViaCEP, consultado aqui no servidor) e confere em municipios_atendimento:
- *  - "entrega": município com mais de 200 mil habitantes (SP, MG, PR, MS) -> entrega em casa;
- *  - "polo": município menor -> retirada na cidade atendida mais próxima (polo);
+ *  - "entrega": município numa zona de frete (Rio Preto/Mirassol ou raio de 135 km de Rio Preto) OU com mais de 200 mil
+ *    habitantes (SP, MG, PR, MS) -> entrega em casa; a zona, quando existe, traz as regras de frete dela;
+ *  - "polo": município menor e fora das zonas -> retirada na cidade atendida mais próxima (polo);
  *  - "fora": CEP de outro estado -> sem checkout online (a equipe combina);
  *  - "desconhecido": CEP inválido ou município não reconhecido.
  * Se o ViaCEP falhar, usa a cidade e o estado informados no formulário.
  */
-async function resolverDestino(cep: string, cidadeIn: string, ufIn: string): Promise<Destino> {
+async function resolverDestino(cep: string, cidadeIn: string, ufIn: string, regras: RegrasFrete): Promise<Destino> {
   let cidade = cidadeIn;
   let uf = ufIn.toUpperCase();
   let ibge = "";
@@ -428,8 +430,15 @@ async function resolverDestino(cep: string, cidadeIn: string, ufIn: string): Pro
   } catch {
     /* ViaCEP fora do ar: segue com o que o cliente informou */
   }
-  const colunas = "ibge, nome, uf, atendido, polo_ibge";
-  let linha: { ibge: string; nome: string; uf: string; atendido: boolean; polo_ibge: string | null } | null = null;
+  const colunas = "ibge, nome, uf, atendido, polo_ibge, distancia_rp_km";
+  let linha: {
+    ibge: string;
+    nome: string;
+    uf: string;
+    atendido: boolean;
+    polo_ibge: string | null;
+    distancia_rp_km: number | string | null;
+  } | null = null;
   if (ibge) {
     const { data } = await supabase.from("municipios_atendimento").select(colunas).eq("ibge", ibge).maybeSingle();
     linha = data;
@@ -442,7 +451,10 @@ async function resolverDestino(cep: string, cidadeIn: string, ufIn: string): Pro
     // Estado fora de SP/MG/PR/MS (a tabela só tem esses): sem entrega online. Dentro deles, nome não reconhecido.
     return { situacao: uf && !UFS_ATENDIDAS.has(uf) ? "fora" : "desconhecido", cidade, uf };
   }
-  if (linha.atendido) return { situacao: "entrega", cidade: linha.nome, uf: linha.uf };
+  // Zona de frete (Rio Preto/Mirassol ou raio de Rio Preto): entrega em casa com as regras da zona, mesmo em cidade pequena.
+  const zona = escolherZona(linha.ibge, linha.distancia_rp_km === null ? null : Number(linha.distancia_rp_km), regras);
+  if (zona) return { situacao: "entrega", cidade: linha.nome, uf: linha.uf, zona };
+  if (linha.atendido) return { situacao: "entrega", cidade: linha.nome, uf: linha.uf, zona: null };
   if (linha.polo_ibge) {
     const { data: polo } = await supabase.from("municipios_atendimento").select("ibge, nome, uf").eq("ibge", linha.polo_ibge).maybeSingle();
     if (polo) return { situacao: "polo", cidade: linha.nome, uf: linha.uf, polo };
@@ -453,6 +465,8 @@ async function resolverDestino(cep: string, cidadeIn: string, ufIn: string): Pro
 /**
  * Frete do pedido. null = "a combinar com a equipe" (retirada no local, abaixo do pedido mínimo, cidade fora da área ou
  * não reconhecida). O pedido mínimo olha o preço de tabela (antes do cupom); o frete grátis olha o valor já com o cupom.
+ * Cidade numa zona de frete usa o valor da caixa, o frete grátis e o mínimo da zona; as demais, a tabela por estado.
+ * Devolve também o mínimo e o frete grátis que valem para este destino (a tela mostra esses números).
  */
 function orcamentoFrete(
   linhas: Linha[],
@@ -461,14 +475,17 @@ function orcamentoFrete(
   tipoEntrega: string,
   destino: Destino | null,
   cfg: Config,
-): { frete: ResultadoFrete | null; abaixoMinimo: boolean } {
-  if (tipoEntrega === "retirada") return { frete: null, abaixoMinimo: false };
-  const abaixoMinimo = subtotalTabela < cfg.frete.pedido_minimo_online;
+): { frete: ResultadoFrete | null; abaixoMinimo: boolean; minimo: number; gratisAPartir: number } {
+  const zona = destino?.zona ?? null;
+  const minimo = zona ? zona.pedido_minimo_online : cfg.frete.pedido_minimo_online;
+  const gratisAPartir = zona ? zona.gratis_a_partir : cfg.frete.gratis_a_partir;
+  if (tipoEntrega === "retirada") return { frete: null, abaixoMinimo: false, minimo, gratisAPartir };
+  const abaixoMinimo = subtotalTabela < minimo;
   if (abaixoMinimo || !destino || (destino.situacao !== "entrega" && destino.situacao !== "polo")) {
-    return { frete: null, abaixoMinimo };
+    return { frete: null, abaixoMinimo, minimo, gratisAPartir };
   }
   const ufFrete = destino.situacao === "polo" && destino.polo ? destino.polo.uf : destino.uf;
-  return { frete: calcularFrete(linhas, ufFrete, subtotalFinal, cfg.frete), abaixoMinimo };
+  return { frete: calcularFrete(linhas, ufFrete, subtotalFinal, cfg.frete, zona), abaixoMinimo, minimo, gratisAPartir };
 }
 
 /** acao "frete": só calcula (não grava nada). Usada pelo resumo do pedido assim que o CEP é digitado. */
@@ -492,8 +509,8 @@ async function calcularFreteAcao(b: Record<string, unknown>) {
 
   const tipoIn = limpar(b.tipo, 15);
   const tipo = tipoIn === "retirada" ? "retirada" : tipoIn === "transportadora" ? "transportadora" : "envio";
-  const destino = tipo === "retirada" ? null : await resolverDestino(soDigitos(b.cep), limpar(b.cidade, 80), limpar(b.uf, 2));
-  const { frete, abaixoMinimo } = orcamentoFrete(calc.linhas, subtotalFinal, subtotal, tipo, destino, cfg);
+  const destino = tipo === "retirada" ? null : await resolverDestino(soDigitos(b.cep), limpar(b.cidade, 80), limpar(b.uf, 2), cfg.frete);
+  const { frete, abaixoMinimo, minimo, gratisAPartir } = orcamentoFrete(calc.linhas, subtotalFinal, subtotal, tipo, destino, cfg);
   const totalPagar = arred2(subtotalFinal + (frete?.frete ?? 0));
 
   let motivo: string | null = null;
@@ -515,9 +532,10 @@ async function calcularFreteAcao(b: Record<string, unknown>) {
       : null,
     frete: frete ? { valor: frete.frete, gratis: frete.gratis, caixas: frete.caixas } : null,
     total_pagar: totalPagar,
-    pedido_minimo: cfg.frete.pedido_minimo_online,
-    gratis_a_partir: cfg.frete.gratis_a_partir,
-    falta_para_gratis: frete && !frete.gratis ? arred2(Math.max(0, cfg.frete.gratis_a_partir - subtotalFinal)) : null,
+    zona: destino?.zona?.nome ?? null,
+    pedido_minimo: minimo,
+    gratis_a_partir: gratisAPartir,
+    falta_para_gratis: frete && !frete.gratis ? arred2(Math.max(0, gratisAPartir - subtotalFinal)) : null,
     abaixo_minimo: abaixoMinimo,
     online: { disponivel: motivo === null, motivo },
   });
@@ -894,7 +912,7 @@ async function criarPedido(b: Record<string, unknown>) {
   let destino: Destino | null = null;
   let poloCidade: string | null = null;
   if (!soCadastro && tipoEntrega !== "retirada") {
-    destino = await resolverDestino(cep, cidade, uf);
+    destino = await resolverDestino(cep, cidade, uf, cfg.frete);
     if (destino.situacao === "polo" && destino.polo) {
       poloCidade = `${destino.polo.nome}/${destino.polo.uf}`;
       if (tipoEntrega === "envio") {
