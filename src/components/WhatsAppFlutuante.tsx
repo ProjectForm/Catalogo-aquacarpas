@@ -10,7 +10,7 @@ export function WhatsAppFlutuante() {
   const path = usePathname();
   const { quantidadeTotal, pronto } = useCart();
   // Sobe um pouco quando a barra "Finalizar pedido" está visível, para não cobrir o botão dela.
-  const comBarra = pronto && quantidadeTotal > 0 && !path.startsWith("/entrega") && !path.startsWith("/obrigado");
+  const comBarra = pronto && quantidadeTotal > 0 && !path.startsWith("/entrega") && !path.startsWith("/obrigado") && !path.startsWith("/pagamento");
   const texto = path.startsWith("/p/")
     ? "Olá! Tenho interesse em um peixe do catálogo da Aquacarpas."
     : "Olá! Vim pelo catálogo da Aquacarpas e gostaria de ajuda.";

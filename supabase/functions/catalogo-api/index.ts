@@ -15,7 +15,22 @@
 //  - "cupom": só CALCULA o desconto (não grava nada e não avisa ninguém). Devolve
 //    { ok, codigo, percentual, desconto, total_original, total_final, valido_ate } ou um erro amigável.
 //  - "pedido": aceita `cupom` (opcional). O desconto incide sobre o total que seria cobrado (já com promoção por item).
+//
+// Checkout online (frete, Pix e InfinitePay):
+//  - "frete": calcula frete por caixas (frete.ts), confere se a cidade é atendida (tabela municipios_atendimento) e diz se o
+//    pagamento online está disponível. Não grava nada.
+//  - "pedido" com `checkout: true`: além do que já fazia, calcula o frete NO SERVIDOR, grava valor_total (peixes com desconto +
+//    frete), reserva os exemplares únicos por alguns minutos e gera o Pix "copia e cola" com o valor exato (pix.ts).
+//  - "pedido_status" / "pagamento" / "pagamento_conferir" / "avisar_pagamento": usados pela página /pagamento. O cliente
+//    só acessa o PRÓPRIO pedido, pelo número + token secreto (vendas.token_publico).
+//  - POST ?hook=infinitepay: webhook da InfinitePay (não é assinado, por isso a confirmação SEMPRE passa por payment_check).
+//  - Pagamento confirmado (status 'pago' / pago_em): o gatilho vendas_baixa_estoque marca exemplar único como 'vendido'.
+//  - Configuração (frete, chave Pix, handle da InfinitePay, liga/desliga) fica na tabela config_loja, nunca no código.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { calcularFrete } from "./frete.ts";
+import type { RegrasFrete, ResultadoFrete } from "./frete.ts";
+import { tamanhoMedioCm } from "./frete.ts";
+import { gerarPix } from "./pix.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
@@ -199,7 +214,9 @@ interface Linha {
   codigo: string;
   nome: string;
   variedade: string;
+  tipo: string; // "lote" | "exemplar_unico"
   tamanho_cm: number | null;
+  tamanho_medio_cm: number | null; // tamanho_cm ou a média da faixa (ficha.faixa_cm); base do cálculo de caixas
   quantidade: number;
   preco_unitario: number;
   subtotal: number;
@@ -257,7 +274,9 @@ async function calcularLinhas(pedidos: Map<string, number>): Promise<{ linhas: L
       codigo,
       nome: p.nome ?? p.variedade,
       variedade: p.variedade,
+      tipo: p.tipo === "exemplar_unico" ? "exemplar_unico" : "lote",
       tamanho_cm: p.tamanho_cm ?? null,
+      tamanho_medio_cm: tamanhoMedioCm(p.tamanho_cm, p.ficha?.faixa_cm),
       quantidade: qtd,
       preco_unitario: unit,
       subtotal: arred2(unit * qtd),
@@ -333,6 +352,444 @@ async function calcularCupom(b: Record<string, unknown>) {
   const r = await aplicarCupom(b.cupom, totalOriginal);
   if ("resp" in r) return r.resp;
   return json(200, { ok: true, ...r.cupom });
+}
+
+// ---------- configuração da loja (tabela config_loja) ----------
+interface Config {
+  frete: RegrasFrete;
+  pagamento: {
+    checkout_online_ativo: boolean;
+    reserva_minutos: number;
+    pix: { chave: string | null; nome: string | null; cidade: string | null };
+    infinitepay: { handle: string | null };
+  };
+  site: { url: string };
+  teste: { marcador: string };
+}
+
+async function carregarConfig(): Promise<Config> {
+  const { data, error } = await supabase.from("config_loja").select("chave, valor");
+  if (error || !data) throw new Error("config_loja indisponível");
+  // deno-lint-ignore no-explicit-any
+  const m: Record<string, any> = Object.fromEntries(data.map((r) => [r.chave, r.valor]));
+  return {
+    frete: m.frete as RegrasFrete,
+    pagamento: {
+      checkout_online_ativo: m.pagamento?.checkout_online_ativo === true,
+      reserva_minutos: Number(m.pagamento?.reserva_minutos) > 0 ? Number(m.pagamento.reserva_minutos) : 60,
+      pix: { chave: m.pagamento?.pix?.chave ?? null, nome: m.pagamento?.pix?.nome ?? null, cidade: m.pagamento?.pix?.cidade ?? null },
+      infinitepay: { handle: m.pagamento?.infinitepay?.handle ?? null },
+    },
+    site: { url: String(m.site?.url ?? "https://catalogo-aquacarpas.vercel.app").replace(/\/$/, "") },
+    teste: { marcador: String(m.teste?.marcador ?? "") },
+  };
+}
+
+const pixPronto = (c: Config) => Boolean(c.pagamento.pix.chave && c.pagamento.pix.nome && c.pagamento.pix.cidade);
+const infinitePayPronto = (c: Config) => Boolean(c.pagamento.infinitepay.handle);
+/** Checkout online só abre se estiver ligado E houver ao menos uma forma de pagar configurada. */
+const checkoutDisponivel = (c: Config) => c.pagamento.checkout_online_ativo && (pixPronto(c) || infinitePayPronto(c));
+
+// ---------- destino: cidade atendida, retirada em cidade-polo ou fora da área ----------
+interface Destino {
+  situacao: "entrega" | "polo" | "fora" | "desconhecido";
+  cidade: string;
+  uf: string;
+  polo?: { nome: string; uf: string; ibge: string };
+}
+
+const UFS_ATENDIDAS = new Set(["SP", "MG", "PR", "MS"]);
+const semAcento = (s: string) =>
+  s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+
+/**
+ * Descobre a cidade pelo CEP (ViaCEP, consultado aqui no servidor) e confere em municipios_atendimento:
+ *  - "entrega": município com mais de 200 mil habitantes (SP, MG, PR, MS) -> entrega em casa;
+ *  - "polo": município menor -> retirada na cidade atendida mais próxima (polo);
+ *  - "fora": CEP de outro estado -> sem checkout online (a equipe combina);
+ *  - "desconhecido": CEP inválido ou município não reconhecido.
+ * Se o ViaCEP falhar, usa a cidade e o estado informados no formulário.
+ */
+async function resolverDestino(cep: string, cidadeIn: string, ufIn: string): Promise<Destino> {
+  let cidade = cidadeIn;
+  let uf = ufIn.toUpperCase();
+  let ibge = "";
+  if (cep.length !== 8) return { situacao: "desconhecido", cidade, uf };
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { signal: AbortSignal.timeout(4000) });
+    if (r.ok) {
+      const j = await r.json();
+      if (!j.erro) {
+        ibge = String(j.ibge ?? "");
+        cidade = String(j.localidade || cidade);
+        uf = String(j.uf || uf).toUpperCase();
+      }
+    }
+  } catch {
+    /* ViaCEP fora do ar: segue com o que o cliente informou */
+  }
+  const colunas = "ibge, nome, uf, atendido, polo_ibge";
+  let linha: { ibge: string; nome: string; uf: string; atendido: boolean; polo_ibge: string | null } | null = null;
+  if (ibge) {
+    const { data } = await supabase.from("municipios_atendimento").select(colunas).eq("ibge", ibge).maybeSingle();
+    linha = data;
+  }
+  if (!linha && cidade && uf) {
+    const { data } = await supabase.from("municipios_atendimento").select(colunas).eq("uf", uf).eq("nome_busca", semAcento(cidade)).limit(1);
+    linha = data?.[0] ?? null;
+  }
+  if (!linha) {
+    // Estado fora de SP/MG/PR/MS (a tabela só tem esses): sem entrega online. Dentro deles, nome não reconhecido.
+    return { situacao: uf && !UFS_ATENDIDAS.has(uf) ? "fora" : "desconhecido", cidade, uf };
+  }
+  if (linha.atendido) return { situacao: "entrega", cidade: linha.nome, uf: linha.uf };
+  if (linha.polo_ibge) {
+    const { data: polo } = await supabase.from("municipios_atendimento").select("ibge, nome, uf").eq("ibge", linha.polo_ibge).maybeSingle();
+    if (polo) return { situacao: "polo", cidade: linha.nome, uf: linha.uf, polo };
+  }
+  return { situacao: "desconhecido", cidade: linha.nome, uf: linha.uf };
+}
+
+/**
+ * Frete do pedido. null = "a combinar com a equipe" (retirada no local, abaixo do pedido mínimo, cidade fora da área ou
+ * não reconhecida). O pedido mínimo olha o preço de tabela (antes do cupom); o frete grátis olha o valor já com o cupom.
+ */
+function orcamentoFrete(
+  linhas: Linha[],
+  subtotalFinal: number,
+  subtotalTabela: number,
+  tipoEntrega: string,
+  destino: Destino | null,
+  cfg: Config,
+): { frete: ResultadoFrete | null; abaixoMinimo: boolean } {
+  if (tipoEntrega === "retirada") return { frete: null, abaixoMinimo: false };
+  const abaixoMinimo = subtotalTabela < cfg.frete.pedido_minimo_online;
+  if (abaixoMinimo || !destino || (destino.situacao !== "entrega" && destino.situacao !== "polo")) {
+    return { frete: null, abaixoMinimo };
+  }
+  const ufFrete = destino.situacao === "polo" && destino.polo ? destino.polo.uf : destino.uf;
+  return { frete: calcularFrete(linhas, ufFrete, subtotalFinal, cfg.frete), abaixoMinimo };
+}
+
+/** acao "frete": só calcula (não grava nada). Usada pelo resumo do pedido assim que o CEP é digitado. */
+async function calcularFreteAcao(b: Record<string, unknown>) {
+  const lidos = lerItens(b.itens);
+  if ("resp" in lidos) return lidos.resp;
+  if (lidos.pedidos.size === 0) return erro(422, "sem_itens", "Adicione ao menos um peixe ao pedido.");
+  const calc = await calcularLinhas(lidos.pedidos);
+  if ("resp" in calc) return calc.resp;
+  const cfg = await carregarConfig();
+  const subtotal = arred2(calc.linhas.reduce((s, l) => s + l.subtotal, 0));
+
+  let cupom: CupomAplicado | null = null;
+  let cupomErro: string | null = null;
+  if (limpar(b.cupom, 30)) {
+    const r = await aplicarCupom(b.cupom, subtotal);
+    if ("resp" in r) cupomErro = String((await r.resp.json()).mensagem ?? "Cupom inválido.");
+    else cupom = r.cupom;
+  }
+  const subtotalFinal = cupom?.total_final ?? subtotal;
+
+  const tipoIn = limpar(b.tipo, 15);
+  const tipo = tipoIn === "retirada" ? "retirada" : tipoIn === "transportadora" ? "transportadora" : "envio";
+  const destino = tipo === "retirada" ? null : await resolverDestino(soDigitos(b.cep), limpar(b.cidade, 80), limpar(b.uf, 2));
+  const { frete, abaixoMinimo } = orcamentoFrete(calc.linhas, subtotalFinal, subtotal, tipo, destino, cfg);
+  const totalPagar = arred2(subtotalFinal + (frete?.frete ?? 0));
+
+  let motivo: string | null = null;
+  if (!checkoutDisponivel(cfg)) motivo = "desligado";
+  else if (tipo !== "retirada") {
+    if (!destino || destino.situacao === "desconhecido") motivo = "sem_cep";
+    else if (destino.situacao === "fora") motivo = "fora_area";
+    else if (abaixoMinimo) motivo = "abaixo_minimo";
+  }
+  return json(200, {
+    ok: true,
+    subtotal,
+    desconto: cupom?.desconto ?? 0,
+    cupom: cupom?.codigo ?? null,
+    cupom_erro: cupomErro,
+    subtotal_final: subtotalFinal,
+    destino: destino
+      ? { situacao: destino.situacao, cidade: destino.cidade, uf: destino.uf, polo: destino.polo ? { nome: destino.polo.nome, uf: destino.polo.uf } : null }
+      : null,
+    frete: frete ? { valor: frete.frete, gratis: frete.gratis, caixas: frete.caixas } : null,
+    total_pagar: totalPagar,
+    pedido_minimo: cfg.frete.pedido_minimo_online,
+    gratis_a_partir: cfg.frete.gratis_a_partir,
+    falta_para_gratis: frete && !frete.gratis ? arred2(Math.max(0, cfg.frete.gratis_a_partir - subtotalFinal)) : null,
+    abaixo_minimo: abaixoMinimo,
+    online: { disponivel: motivo === null, motivo },
+  });
+}
+
+// ---------- pagamento: Pix, InfinitePay, status e confirmação ----------
+function montarPix(cfg: Config, numero: number, valor: number): string | null {
+  const p = cfg.pagamento.pix;
+  if (!p.chave || !p.nome || !p.cidade) return null;
+  try {
+    return gerarPix({ chave: p.chave, nome: p.nome, cidade: p.cidade, valor, txid: `AQ${numero}` });
+  } catch (e) {
+    console.error("Pix não gerado:", e instanceof Error ? e.message : "erro");
+    return null;
+  }
+}
+
+/** O schema da resposta da InfinitePay não é documentado: pega a primeira URL https (preferindo o domínio dela). */
+function extrairUrl(j: unknown): string | null {
+  const achados: string[] = [];
+  const visita = (v: unknown, nivel: number) => {
+    if (nivel > 3) return;
+    if (typeof v === "string") {
+      if (/^https:\/\/\S+$/.test(v)) achados.push(v);
+    } else if (v && typeof v === "object") {
+      for (const x of Object.values(v as Record<string, unknown>)) visita(x, nivel + 1);
+    }
+  };
+  visita(j, 0);
+  return achados.find((u) => /infinitepay/i.test(u)) ?? achados[0] ?? null;
+}
+
+interface VendaPag {
+  numero: number;
+  token_publico: string;
+  valor_total: number | string;
+  nome_completo: string | null;
+  telefone: string | null;
+  email: string | null;
+}
+
+/** Cria o link de checkout da InfinitePay (cartão e Pix) para o valor total do pedido. Devolve null se falhar. */
+async function criarLinkInfinitePay(cfg: Config, v: VendaPag): Promise<string | null> {
+  const handle = (cfg.pagamento.infinitepay.handle ?? "").replace(/^\$/, "").trim();
+  if (!handle) return null;
+  const base = {
+    handle,
+    order_nsu: `AQ-${v.numero}`,
+    items: [{ quantity: 1, price: Math.round(Number(v.valor_total) * 100), description: `Pedido Aquacarpas nº ${v.numero}` }],
+    redirect_url: `${cfg.site.url}/obrigado?n=${v.numero}&t=${v.token_publico}`,
+    customer: {
+      name: String(v.nome_completo ?? "Cliente").slice(0, 100),
+      ...(v.email ? { email: v.email } : {}),
+      ...(v.telefone ? { phone_number: `+${v.telefone}` } : {}),
+    },
+  };
+  const hook = `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/catalogo-api?hook=infinitepay`;
+  // A documentação mostra o webhook como objeto e, em outro trecho, como webhook_url: tenta o documentado e, se a
+  // API recusar o formato, a variante simples. (O retorno do cliente à loja também confere o pagamento, ver pagamento_conferir.)
+  const variantes = [{ ...base, webhook: { url: hook, events: ["paid"] } }, { ...base, webhook_url: hook }];
+  for (const corpo of variantes) {
+    try {
+      const r = await fetch("https://api.checkout.infinitepay.io/links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(corpo),
+        signal: AbortSignal.timeout(10000),
+      });
+      const j = await r.json().catch(() => null);
+      if (r.ok && j && j.success !== false) {
+        const url = extrairUrl(j);
+        if (url) return url;
+      }
+      console.error("InfinitePay /links:", r.status, typeof j?.error === "string" ? j.error : "sem detalhe");
+      if (r.status !== 400 && r.status !== 422) return null; // só tenta a outra forma se for erro de formato
+    } catch (e) {
+      console.error("InfinitePay /links falhou:", e instanceof Error ? e.name : "erro");
+      return null;
+    }
+  }
+  return null;
+}
+
+type ResultadoPagamento = "pago" | "pendente" | "divergente";
+
+/**
+ * Confirma na InfinitePay (payment_check) e, se estiver pago no valor certo, marca a venda como paga. O gatilho do banco
+ * dá baixa no estoque (exemplar único vira "vendido"). Chamada pelo webhook e pelo retorno do cliente à loja.
+ */
+async function confirmarInfinitePay(
+  cfg: Config,
+  venda: { id: string; numero: number; valor_total: number | string; status: string; itens: unknown; observacoes: string | null },
+  transactionNsu: string,
+  slug: string,
+): Promise<ResultadoPagamento> {
+  if (venda.status === "pago") return "pago";
+  if (venda.status !== "aguardando_pagamento") return "pendente";
+  const handle = (cfg.pagamento.infinitepay.handle ?? "").replace(/^\$/, "").trim();
+  if (!handle) return "pendente";
+  let j: Record<string, unknown> | null = null;
+  try {
+    const r = await fetch("https://api.checkout.infinitepay.io/payment_check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ handle, order_nsu: `AQ-${venda.numero}`, transaction_nsu: transactionNsu, slug }),
+      signal: AbortSignal.timeout(8000),
+    });
+    j = await r.json().catch(() => null);
+  } catch {
+    return "pendente";
+  }
+  if (!j || j.success !== true || j.paid !== true) return "pendente";
+
+  // `amount` é o valor original do pedido; `paid_amount` pode incluir juros do cartão, então não se compara com ele.
+  const esperado = Math.round(Number(venda.valor_total) * 100);
+  if (Number(j.amount) !== esperado) {
+    console.error(`Pedido ${venda.numero}: valor pago diverge do esperado.`);
+    await avisarEquipe(`ATENCAO: o pagamento InfinitePay do pedido nº ${venda.numero} chegou com valor diferente do pedido. Conferir na InfinitePay antes de enviar.`);
+    return "divergente";
+  }
+
+  // Exemplar único já vendido a outro cliente enquanto este pagava (reserva expirada): o dinheiro entrou, a equipe resolve.
+  const codigosUnicos = (Array.isArray(venda.itens) ? venda.itens : [])
+    .filter((l: Record<string, unknown>) => l.tipo === "exemplar_unico")
+    .map((l: Record<string, unknown>) => String(l.codigo));
+  let conflito = "";
+  if (codigosUnicos.length > 0) {
+    const { data: vendidos } = await supabase.from("catalogo").select("nome").in("codigo", codigosUnicos).eq("status", "vendido");
+    if (vendidos && vendidos.length > 0) conflito = vendidos.map((x) => x.nome).join(", ");
+  }
+
+  const metodo = j.capture_method === "pix" ? "infinitepay_pix" : "infinitepay_cartao";
+  const nota = conflito ? [venda.observacoes, `CONFLITO DE ESTOQUE: ${conflito} já constava como vendido. Estornar ou substituir.`].filter(Boolean).join(" | ") : venda.observacoes;
+  const { data: atualizadas } = await supabase
+    .from("vendas")
+    .update({
+      status: "pago",
+      pago_em: new Date().toISOString(),
+      pagamento_metodo: metodo,
+      pagamento_ref: `AQ-${venda.numero}`,
+      infinitepay_transaction_nsu: transactionNsu,
+      observacoes: nota,
+    })
+    .eq("id", venda.id)
+    .eq("status", "aguardando_pagamento")
+    .select("id");
+  if (atualizadas && atualizadas.length > 0) {
+    const forma = j.capture_method === "pix" ? "Pix" : "cartão";
+    await avisarEquipe(
+      `Pagamento confirmado (InfinitePay, ${forma}) do pedido nº ${venda.numero}: ${brl(esperado / 100)}.` +
+        (conflito ? `\nATENCAO: ${conflito} já constava como vendido. Resolver com o cliente (estorno ou outro peixe).` : ""),
+    );
+  }
+  return "pago";
+}
+
+/** Acha o pedido do cliente pelo número + token secreto. Nunca devolve CPF nem dados de outros pedidos. */
+async function buscarVendaDoCliente(b: Record<string, unknown>) {
+  const numero = Math.floor(Number(b.numero));
+  const token = limpar(b.token, 40);
+  if (!Number.isFinite(numero) || numero < 1 || !/^[0-9a-f-]{36}$/i.test(token)) return null;
+  const { data } = await supabase.from("vendas").select("*").eq("numero", numero).eq("token_publico", token).maybeSingle();
+  return data;
+}
+
+async function statusDoPedido(b: Record<string, unknown>) {
+  const v = await buscarVendaDoCliente(b);
+  if (!v) return erro(404, "pedido_nao_encontrado", "Pedido não encontrado. Confira o link que recebeu.");
+  const cfg = await carregarConfig();
+  const itens = (Array.isArray(v.itens) ? v.itens : []) as Linha[];
+  const pago = v.status === "pago" || v.pago_em != null;
+  const expirado = !pago && v.status === "aguardando_pagamento" && v.reservado_ate != null && Date.parse(v.reservado_ate) < Date.now();
+  return json(200, {
+    ok: true,
+    numero: v.numero,
+    status: v.status,
+    pago,
+    pagamento_online: v.reservado_ate != null,
+    expirado,
+    reservado_ate: v.reservado_ate,
+    tem_exemplar_unico: itens.some((l) => l.tipo === "exemplar_unico"),
+    entrega_tipo: v.entrega_tipo,
+    cidade: v.cidade,
+    uf: v.uf,
+    polo_cidade: v.polo_cidade,
+    cupom: v.cupom,
+    desconto: v.desconto != null ? Number(v.desconto) : null,
+    frete: v.frete != null ? Number(v.frete) : null,
+    frete_gratis: v.frete_gratis,
+    caixas: v.caixas,
+    total_pagar: v.valor_total != null ? Number(v.valor_total) : null,
+    itens: itens.map((l) => ({ nome: l.nome, quantidade: l.quantidade, subtotal: l.subtotal })),
+    metodos: { pix: Boolean(v.pix_copia_cola), infinitepay: infinitePayPronto(cfg) },
+    pix_copia_cola: pago || expirado ? null : v.pix_copia_cola,
+    infinitepay_url: pago || expirado ? null : v.infinitepay_url,
+  });
+}
+
+/** acao "pagamento": entrega o Pix (já gerado no pedido) ou cria o link da InfinitePay. */
+async function iniciarPagamento(b: Record<string, unknown>) {
+  const v = await buscarVendaDoCliente(b);
+  if (!v) return erro(404, "pedido_nao_encontrado", "Pedido não encontrado. Confira o link que recebeu.");
+  if (v.status === "pago") return json(200, { ok: true, pago: true });
+  if (v.status !== "aguardando_pagamento" || v.reservado_ate == null) {
+    return erro(409, "pagamento_indisponivel", "Este pedido não está aberto para pagamento online. Fale com a gente pelo WhatsApp.");
+  }
+  if (Date.parse(v.reservado_ate) < Date.now()) {
+    return erro(410, "reserva_expirada", "O prazo para pagar este pedido terminou. Fale com a gente pelo WhatsApp ou refaça o pedido.");
+  }
+  const cfg = await carregarConfig();
+  const metodo = limpar(b.metodo, 15);
+  if (metodo === "pix") {
+    if (!v.pix_copia_cola) return erro(409, "pix_indisponivel", "O Pix não está disponível agora. Tente a InfinitePay ou fale pelo WhatsApp.");
+    if (!v.pagamento_metodo) await supabase.from("vendas").update({ pagamento_metodo: "pix" }).eq("id", v.id);
+    return json(200, { ok: true, pix_copia_cola: v.pix_copia_cola });
+  }
+  if (metodo === "infinitepay") {
+    if (v.infinitepay_url) return json(200, { ok: true, url: v.infinitepay_url });
+    const url = await criarLinkInfinitePay(cfg, v);
+    if (!url) return erro(502, "infinitepay_indisponivel", "Não foi possível abrir o pagamento pela InfinitePay agora. Use o Pix ou tente de novo em instantes.");
+    await supabase.from("vendas").update({ infinitepay_url: url, pagamento_ref: `AQ-${v.numero}` }).eq("id", v.id);
+    return json(200, { ok: true, url });
+  }
+  return erro(400, "metodo_invalido", "Forma de pagamento não reconhecida.");
+}
+
+/** acao "pagamento_conferir": o cliente voltou da InfinitePay; confere o pagamento sem depender do webhook. */
+async function conferirPagamento(b: Record<string, unknown>) {
+  const v = await buscarVendaDoCliente(b);
+  if (!v) return erro(404, "pedido_nao_encontrado", "Pedido não encontrado.");
+  if (v.status === "pago") return json(200, { ok: true, pago: true });
+  const transactionNsu = limpar(b.transaction_nsu, 80);
+  const slug = limpar(b.slug, 80);
+  if (!transactionNsu || !slug) return json(200, { ok: true, pago: false });
+  const cfg = await carregarConfig();
+  const r = await confirmarInfinitePay(cfg, v, transactionNsu, slug);
+  return json(200, { ok: true, pago: r === "pago" });
+}
+
+/** acao "avisar_pagamento": o cliente diz que pagou o Pix. Só avisa a equipe (no máximo uma vez a cada 10 minutos). */
+async function avisarPagamentoCliente(b: Record<string, unknown>) {
+  const v = await buscarVendaDoCliente(b);
+  if (!v) return erro(404, "pedido_nao_encontrado", "Pedido não encontrado.");
+  if (v.status === "pago") return json(200, { ok: true, pago: true });
+  const ultimo = v.aviso_pagamento_em ? Date.parse(v.aviso_pagamento_em) : 0;
+  if (Date.now() - ultimo > 10 * 60 * 1000) {
+    await supabase.from("vendas").update({ aviso_pagamento_em: new Date().toISOString() }).eq("id", v.id);
+    const cfg = await carregarConfig();
+    if (!(cfg.teste.marcador && String(v.observacoes ?? "").includes(cfg.teste.marcador))) {
+      await avisarEquipe(
+        `O cliente informou que pagou o pedido nº ${v.numero} (${brl(Number(v.valor_total))}) por Pix. Conferir no banco e confirmar o pagamento no sistema.`,
+      );
+    }
+  }
+  return json(200, { ok: true });
+}
+
+/** Webhook da InfinitePay. Sem assinatura: nada é aceito sem passar pelo payment_check. */
+async function webhookInfinitePay(body: Record<string, unknown>) {
+  const m = /^AQ-(\d{1,9})$/.exec(limpar(body.order_nsu, 40));
+  const transactionNsu = limpar(body.transaction_nsu, 80);
+  const slug = limpar(body.invoice_slug ?? body.slug, 80);
+  if (!m || !transactionNsu || !slug) return erro(400, "webhook_invalido", "Dados incompletos.");
+  const { data: venda } = await supabase
+    .from("vendas")
+    .select("id, numero, valor_total, status, itens, observacoes")
+    .eq("numero", Number(m[1]))
+    .maybeSingle();
+  if (!venda) return erro(400, "pedido_desconhecido", "Pedido não encontrado.");
+  const cfg = await carregarConfig();
+  const r = await confirmarInfinitePay(cfg, venda, transactionNsu, slug);
+  return r === "pago" ? json(200, { ok: true }) : erro(400, "nao_confirmado", "Pagamento não confirmado.");
 }
 
 // ---------- pedido / cadastro de envio ----------
@@ -431,6 +888,29 @@ async function criarPedido(b: Record<string, unknown>) {
   const desconto = cupom?.desconto ?? 0;
   const totalFinal = cupom?.total_final ?? total;
 
+  // ---- frete e destino (cidade atendida, retirada em cidade-polo, caixas). Retirada no local, abaixo do pedido mínimo,
+  // cidade fora da área ou não reconhecida: o frete segue "a combinar" pela equipe, como antes.
+  const cfg = await carregarConfig();
+  let destino: Destino | null = null;
+  let poloCidade: string | null = null;
+  if (!soCadastro && tipoEntrega !== "retirada") {
+    destino = await resolverDestino(cep, cidade, uf);
+    if (destino.situacao === "polo" && destino.polo) {
+      poloCidade = `${destino.polo.nome}/${destino.polo.uf}`;
+      if (tipoEntrega === "envio") {
+        tipoEntrega = "transportadora"; // sem entrega em casa nesta cidade: retirada na cidade-polo
+        avisoRestricao = [avisoRestricao, `Cidade sem entrega em casa: retirada em ${poloCidade}.`].filter(Boolean).join(" ");
+      }
+    }
+  }
+  const orcamento = soCadastro
+    ? { frete: null as ResultadoFrete | null }
+    : orcamentoFrete(linhas, totalFinal, total, tipoEntrega, destino, cfg);
+  const frete = orcamento.frete;
+  const totalPagar = arred2(totalFinal + (frete?.frete ?? 0));
+  // Pagamento online: o navegador pede (`checkout`), mas quem decide é o servidor (ligado, forma de pagar configurada e frete calculado).
+  const pagamentoOnline = b.checkout === true && !soCadastro && checkoutDisponivel(cfg) && (tipoEntrega === "retirada" || frete !== null);
+
   // ---- limite de pedidos por telefone/hora
   const variantes = variantesTelefone(telefone);
   const desde = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -441,6 +921,23 @@ async function criarPedido(b: Record<string, unknown>) {
     .gte("criado_em", desde);
   if ((count ?? 0) >= MAX_PEDIDOS_POR_HORA) {
     return erro(429, "muitas_tentativas", "Recebemos vários pedidos deste número na última hora. Fale com a gente pelo WhatsApp.");
+  }
+
+  // ---- exemplar único reservado por outro cliente que está pagando agora (a própria pessoa pode refazer o pedido)
+  for (const l of linhas.filter((x) => x.tipo === "exemplar_unico")) {
+    // Filtro jsonb "contém" escrito como JSON puro: .contains() com array de objetos vira sintaxe de array do Postgres e
+    // não casa nada (o teste de ponta a ponta pegou isso).
+    const { data: reservas, error: eRes } = await supabase
+      .from("vendas")
+      .select("telefone")
+      .eq("status", "aguardando_pagamento")
+      .gt("reservado_ate", new Date().toISOString())
+      .filter("itens", "cs", JSON.stringify([{ codigo: l.codigo }]))
+      .limit(5);
+    if (eRes) console.error("Consulta de reservas falhou:", eRes.message);
+    if ((reservas ?? []).some((r) => !variantes.includes(String(r.telefone)))) {
+      return erro(409, "item_reservado", `${l.nome} está reservado para outro cliente neste momento. Tente de novo em alguns minutos.`);
+    }
   }
 
   // ---- indicação
@@ -543,9 +1040,14 @@ async function criarPedido(b: Record<string, unknown>) {
       endereco: enderecoTexto,
       cpf: doc || null,
       itens: linhas,
-      valor_total: soCadastro ? null : totalFinal, // total FINAL (já com o desconto do cupom, se houver)
+      valor_total: soCadastro ? null : totalPagar, // total a pagar: peixes já com o desconto do cupom + frete (quando calculado)
       cupom: cupom ? cupom.codigo : null,
       desconto: cupom ? desconto : null,
+      frete: frete ? frete.frete : null,
+      caixas: frete ? frete.caixas : null,
+      frete_gratis: frete ? frete.gratis : null,
+      polo_cidade: poloCidade,
+      reservado_ate: pagamentoOnline ? new Date(Date.now() + cfg.pagamento.reserva_minutos * 60 * 1000).toISOString() : null,
       status: soCadastro ? "cadastro_recebido" : "aguardando_pagamento",
       origem: "catalogo_app",
       origem_pedido: soCadastro ? "cadastro_envio" : "catalogo_app",
@@ -563,9 +1065,18 @@ async function criarPedido(b: Record<string, unknown>) {
       consentimento_em: agora,
       utm,
     })
-    .select("id, numero")
+    .select("id, numero, token_publico")
     .single();
   if (eV || !venda) return erro(500, "erro_pedido", "Não foi possível registrar o pedido agora. Tente pelo WhatsApp.");
+
+  // Pix "copia e cola" com o valor exato e o número do pedido como identificador (aparece no extrato de alguns bancos).
+  let pixCopiaCola: string | null = null;
+  if (pagamentoOnline) {
+    pixCopiaCola = montarPix(cfg, venda.numero, totalPagar);
+    if (pixCopiaCola) await supabase.from("vendas").update({ pix_copia_cola: pixCopiaCola }).eq("id", venda.id);
+  }
+  // Pedido de teste (marcador secreto em config_loja): não manda aviso à equipe.
+  const ehTeste = Boolean(cfg.teste.marcador) && obs.includes(cfg.teste.marcador);
 
   if (indicacaoId) {
     await supabase
@@ -588,9 +1099,14 @@ async function criarPedido(b: Record<string, unknown>) {
       resumo: `Pedido nº ${venda.numero} pelo catálogo online: ` +
         linhas.map((l) => `${l.quantidade}x ${l.nome}`).join(", ") +
         (cupom ? `. Cupom ${cupom.codigo} (${cupom.percentual}%): desconto de ${brl(desconto)} sobre ${brl(total)}` : "") +
-        `. Total ${brl(totalFinal)}. ` +
+        `. Total ${brl(totalPagar)}` +
+        (frete ? ` (frete ${frete.gratis ? "grátis" : brl(frete.frete)})` : " (frete a combinar)") +
+        (pagamentoOnline ? ". Pagamento online: aguardando" : "") +
+        ". " +
         (tipoEntrega === "transportadora"
-          ? `Retirada na transportadora (CEP ${fmtCep(cep)}, ${cidade}/${uf}): definir qual.`
+          ? poloCidade
+            ? `Retirada em ${poloCidade} (cidade mais próxima de ${cidade}/${uf}): definir o local.`
+            : `Retirada na transportadora (CEP ${fmtCep(cep)}, ${cidade}/${uf}): definir qual.`
           : tipoEntrega === "retirada"
           ? "Retirada no local."
           : `Entrega em ${cidade}/${uf}.`),
@@ -610,8 +1126,19 @@ async function criarPedido(b: Record<string, unknown>) {
   const recebimento = tipoEntrega === "retirada"
     ? "Retirada no local (São José do Rio Preto)"
     : tipoEntrega === "transportadora"
-    ? `Retirada na transportadora mais próxima do CEP ${fmtCep(cep)} (${cidade}/${uf}). Qual transportadora: a confirmar.`
+    ? poloCidade
+      ? `Retirada em ${poloCidade} (cidade mais próxima de ${cidade}/${uf}). Local: a confirmar.`
+      : `Retirada na transportadora mais próxima do CEP ${fmtCep(cep)} (${cidade}/${uf}). Qual transportadora: a confirmar.`
     : "Entrega no endereço";
+  // Fechamento dos valores: com frete calculado mostra frete e total do pedido; sem, mantém "frete a combinar".
+  const linhaFrete = frete === null
+    ? ""
+    : frete.gratis
+    ? "Frete: grátis\n"
+    : `Frete: ${brl(frete.frete)} (${frete.caixas} ${frete.caixas === 1 ? "caixa" : "caixas"})\n`;
+  const fechamento = frete === null
+    ? `Total dos peixes: ${brl(totalFinal)} (frete a combinar).`
+    : `Total dos peixes: ${brl(totalFinal)}\n${linhaFrete}Total do pedido: ${brl(totalPagar)}.`;
   const blocoCliente = [
     `Nome: ${nome}`,
     `WhatsApp: ${fmtTelefone(telefone)}`,
@@ -625,7 +1152,8 @@ async function criarPedido(b: Record<string, unknown>) {
     ? `Olá! Aqui é ${primeiroNome}. Enviei meus dados de entrega pelo site da Aquacarpas (cadastro nº ${venda.numero}).\n\n${blocoCliente}\n\nPodemos seguir com o meu pedido?`
     : `Olá! Aqui é ${primeiroNome}. Fiz o pedido nº ${venda.numero} pelo catálogo da Aquacarpas.\n\nPeixes:\n` +
       linhas.map((l) => `- ${l.quantidade}x ${l.nome} (${brl(l.subtotal)})`).join("\n") +
-      `\n${textoDesconto}Total dos peixes: ${brl(totalFinal)} (frete a combinar).\n\n${blocoCliente}\n\nQuero combinar o pagamento e o envio.`;
+      `\n${textoDesconto}${fechamento}\n\n${blocoCliente}\n\n` +
+      (pagamentoOnline ? "Vou pagar pelo catálogo. Qualquer dúvida sobre o envio, falo por aqui." : "Quero combinar o pagamento e o envio.");
 
   // ---- aviso para a equipe (sem o CPF/CNPJ); roda em segundo plano para não atrasar a resposta ao cliente
   const aviso = [
@@ -635,15 +1163,17 @@ async function criarPedido(b: Record<string, unknown>) {
       : [
         "",
         ...linhas.map((l) => `${l.quantidade}x ${l.nome} (${brl(l.subtotal)})`),
-        (cupom ? `Cupom ${cupom.codigo} (${cupom.percentual}%): -${brl(desconto)} sobre ${brl(total)}\n` : "") +
-        `Total dos peixes: ${brl(totalFinal)} (frete a combinar)`,
+        (cupom ? `Cupom ${cupom.codigo} (${cupom.percentual}%): -${brl(desconto)} sobre ${brl(total)}\n` : "") + fechamento,
+        pagamentoOnline ? "Pagamento online: aguardando (avisamos de novo quando for confirmado)." : "",
       ]),
     "",
     blocoCliente,
   ].join("\n");
-  const envio = avisarEquipe(aviso);
-  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(envio);
-  else await envio;
+  if (!ehTeste) {
+    const envio = avisarEquipe(aviso);
+    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(envio);
+    else await envio;
+  }
 
   return json(200, {
     ok: true,
@@ -658,6 +1188,14 @@ async function criarPedido(b: Record<string, unknown>) {
     desconto: soCadastro ? null : desconto,
     cupom: cupom ? cupom.codigo : null,
     percentual: cupom ? cupom.percentual : null,
+    // Checkout: frete calculado no servidor, forma de pagamento e chave do link /pagamento (número + token).
+    modo_pagamento: pagamentoOnline ? "online" : "whatsapp",
+    token: pagamentoOnline ? venda.token_publico : null,
+    frete: frete ? frete.frete : null,
+    frete_gratis: frete ? frete.gratis : null,
+    caixas: frete ? frete.caixas : null,
+    polo_cidade: poloCidade,
+    total_pagar: soCadastro ? null : totalPagar,
     itens: linhas.map((l) => ({ codigo: l.codigo, nome: l.nome, quantidade: l.quantidade, subtotal: l.subtotal })),
     whatsapp_url: `https://wa.me/${WHATSAPP_ATENDIMENTO}?text=${encodeURIComponent(texto)}`,
   });
@@ -678,9 +1216,15 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    if (new URL(req.url).searchParams.get("hook") === "infinitepay") return await webhookInfinitePay(body);
     if (body.acao === "evento") return await registrarEvento(body);
     if (body.acao === "cupom") return await calcularCupom(body);
+    if (body.acao === "frete") return await calcularFreteAcao(body);
     if (body.acao === "pedido") return await criarPedido(body);
+    if (body.acao === "pedido_status") return await statusDoPedido(body);
+    if (body.acao === "pagamento") return await iniciarPagamento(body);
+    if (body.acao === "pagamento_conferir") return await conferirPagamento(body);
+    if (body.acao === "avisar_pagamento") return await avisarPagamentoCliente(body);
     return erro(400, "acao_invalida", "Ação não reconhecida.");
   } catch (e) {
     // Nunca logar o corpo da requisição: pode conter CPF e endereço.

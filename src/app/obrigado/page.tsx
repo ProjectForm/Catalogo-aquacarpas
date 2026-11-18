@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ObrigadoOnline } from "@/components/ObrigadoOnline";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { ABRIR_WHATSAPP_AUTOMATICO, SITE } from "@/lib/config";
 import { brl } from "@/lib/format";
@@ -19,11 +20,26 @@ interface Ultimo {
   desconto?: number | null;
   cupom?: string | null;
   percentual?: number | null;
+  /** Frete calculado pelo servidor (pedidos a partir do mínimo, em cidade atendida); null = a combinar pelo WhatsApp. */
+  frete?: number | null;
+  frete_gratis?: boolean | null;
+  caixas?: number | null;
+  total_pagar?: number | null;
+  polo_cidade?: string | null;
   itens: { codigo: string; nome: string; quantidade: number; subtotal: number }[];
   whatsapp_url: string | null;
 }
 
+/** Pedido pago no site (link com n + t) usa a tela nova; o fluxo antigo (WhatsApp) segue igual. */
 function Conteudo() {
+  const params = useSearchParams();
+  const n = params.get("n");
+  const t = params.get("t");
+  if (t && n && Number.isFinite(Number(n))) return <ObrigadoOnline n={Number(n)} t={t} />;
+  return <ConteudoWhatsApp />;
+}
+
+function ConteudoWhatsApp() {
   const n = useSearchParams().get("n");
   const [u, setU] = useState<Ultimo | null>(null);
   const [abrindo, setAbrindo] = useState(false);
@@ -89,23 +105,38 @@ function Conteudo() {
                 {i.quantidade}x {i.nome} — {brl(i.subtotal)}
               </p>
             ))}
-            {u.cupom && u.desconto && u.desconto > 0 ? (
+            {(u.cupom && u.desconto && u.desconto > 0) || (u.frete !== null && u.frete !== undefined) ? (
               <div className="subtotais" style={{ marginTop: 10 }}>
                 <div>
                   <span>Subtotal</span>
-                  <span>{brl(u.total_original ?? (u.total ?? 0) + u.desconto)}</span>
+                  <span>{brl(u.total_original ?? u.total ?? 0)}</span>
                 </div>
-                <div className="desconto">
-                  <span>Cupom {u.cupom}{u.percentual ? ` · ${u.percentual}%` : ""}</span>
-                  <span>−{brl(u.desconto)}</span>
-                </div>
+                {u.cupom && u.desconto && u.desconto > 0 ? (
+                  <div className="desconto">
+                    <span>Cupom {u.cupom}{u.percentual ? ` · ${u.percentual}%` : ""}</span>
+                    <span>−{brl(u.desconto)}</span>
+                  </div>
+                ) : null}
+                {u.frete !== null && u.frete !== undefined ? (
+                  <div className={u.frete_gratis ? "desconto" : undefined}>
+                    <span>Frete{u.caixas ? ` · ${u.caixas} ${u.caixas === 1 ? "caixa" : "caixas"}` : ""}</span>
+                    <span>{u.frete_gratis ? "Grátis" : brl(u.frete)}</span>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             {u.total_final != null || u.total !== null ? (
-              <div className={`total${u.cupom ? " destaque" : ""}`} style={{ marginTop: 10 }}>
-                <span>Total dos peixes <small className="suave">(frete não incluso)</small></span>
-                <strong>{brl((u.total_final ?? u.total) as number)}</strong>
-              </div>
+              u.frete !== null && u.frete !== undefined && u.total_pagar != null ? (
+                <div className="total destaque" style={{ marginTop: 10 }}>
+                  <span>Total do pedido</span>
+                  <strong>{brl(u.total_pagar)}</strong>
+                </div>
+              ) : (
+                <div className={`total${u.cupom ? " destaque" : ""}`} style={{ marginTop: 10 }}>
+                  <span>Total dos peixes <small className="suave">(frete não incluso)</small></span>
+                  <strong>{brl((u.total_final ?? u.total) as number)}</strong>
+                </div>
+              )
             ) : null}
           </div>
         ) : null}
@@ -118,8 +149,12 @@ function Conteudo() {
 
         <ol className="passos">
           <li>
-            {transportadora
+            {u?.polo_cidade
+              ? `Confirmamos a disponibilidade dos peixes e informamos o local de retirada em ${u.polo_cidade}.`
+              : transportadora
               ? "Confirmamos a disponibilidade dos peixes e informamos a transportadora mais próxima do seu CEP, onde será a retirada."
+              : u?.frete !== null && u?.frete !== undefined
+              ? "Confirmamos a disponibilidade dos peixes e o frete calculado para a sua cidade."
               : "Confirmamos a disponibilidade dos peixes e o valor do frete para a sua cidade."}
           </li>
           <li>Combinamos o pagamento por Pix ou cartão (Mercado Pago, com juros).</li>

@@ -88,7 +88,7 @@ export const POLITICAS = {
   frete: {
     titulo: "Frete",
     texto:
-      "O valor é calculado pela nossa equipe conforme a sua cidade e informado pelo WhatsApp. Frete grátis em qualquer cidade que atendemos, em compras acima de R$ 2.000.",
+      "Em pedidos a partir de R$ 500 o frete é calculado aqui mesmo, pelo CEP, e aparece no resumo do pedido. Nos demais casos, a nossa equipe informa o valor pelo WhatsApp. Frete grátis em qualquer cidade que atendemos, em compras acima de R$ 2.000 (valor dos peixes já com o desconto de cupons).",
   },
   pagamento: {
     titulo: "Pagamento",

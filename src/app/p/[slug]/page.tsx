@@ -124,8 +124,8 @@ export default async function ProdutoPage({ params }: Props) {
           </div>
 
           <p className="aviso">
-            {POLITICAS.prazo.titulo}, já considerando o jejum pré-envio. {POLITICAS.transporte.titulo}. O frete é calculado pela nossa equipe
-            e informado pelo WhatsApp.{" "}
+            {POLITICAS.prazo.titulo}, já considerando o jejum pré-envio. {POLITICAS.transporte.titulo}. O frete é calculado pelo CEP no
+            resumo do pedido (a partir de R$ 500) ou informado pela nossa equipe pelo WhatsApp.{" "}
             <Link href="/entrega" style={{ textDecoration: "underline" }}>
               Ver detalhes da entrega
             </Link>

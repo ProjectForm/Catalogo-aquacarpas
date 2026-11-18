@@ -8,7 +8,7 @@ import { useCart } from "./CartProvider";
 export function CartBar() {
   const { quantidadeTotal, total, pronto, cupom, bf } = useCart();
   const path = usePathname();
-  if (!pronto || quantidadeTotal === 0 || path.startsWith("/entrega") || path.startsWith("/obrigado")) return null;
+  if (!pronto || quantidadeTotal === 0 || path.startsWith("/entrega") || path.startsWith("/obrigado") || path.startsWith("/pagamento")) return null;
   const comCupom = bf && cupom !== null;
   return (
     <div className="barra-pedido" role="region" aria-label="Resumo do pedido">

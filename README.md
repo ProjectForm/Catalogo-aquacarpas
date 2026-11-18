@@ -63,6 +63,36 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
 - O cupom não aparece como "de R$ X por R$ Y": cards e página do peixe mostram só o preço de tabela vigente; o desconto
   aparece no carrinho. A promoção por item que já existia (`preco_promocional`) continua como antes.
 
+## Checkout online: frete, Pix e InfinitePay
+Tudo é calculado e decidido **no servidor** (Edge Function `catalogo-api`); o navegador só mostra. Código da função em
+`supabase/functions/catalogo-api/` (`index.ts`, `frete.ts`, `pix.ts`); testes da lógica pura: `node --test supabase/functions/catalogo-api/logica.test.ts`.
+- **Frete (já ativo)**: caixas = teto(volume ÷ 15), igual ao site principal (8-12 cm = 1; 12-15 = 1,5; 15-17 = 1,875; 18-21 = 3;
+  23-27 = 5; 28-32 = 7,5; 33+ = 15; tamanho entre duas faixas cai na de cima). Valor por caixa por estado em `config_loja`
+  (chave `frete`: SP 95; MG, MS, PR, DF 125; GO, RJ, SC, RS, MT 150). **Frete grátis** a partir de R$ 2.000 já **com o desconto do
+  cupom**. **Pedido mínimo** de R$ 500 (preço de tabela, antes do cupom) para calcular frete e pagar online; abaixo disso o fluxo é o
+  de antes (WhatsApp, frete a combinar). Tudo editável em `config_loja` (sem deploy).
+- **Cidades atendidas**: tabela `municipios_atendimento` (SP, MG, PR e MS, população do Censo 2022 do IBGE). Mais de 200 mil habitantes
+  = entrega em casa. Menor = retirada na cidade-polo mais próxima em linha reta (`polo_ibge`; o frete é o do estado do polo). Para trocar o
+  polo de uma cidade: `update municipios_atendimento set polo_ibge = '<ibge da cidade polo>' where ibge = '<ibge>'`. Outros estados: sem
+  checkout online, a equipe combina pelo WhatsApp. O CEP é consultado no ViaCEP pelo servidor (usa o IBGE do CEP; se o ViaCEP falhar, usa
+  cidade e estado do formulário). A regra dos 200 mil habitantes nunca aparece no catálogo.
+- **Pagamento online** (desligado até configurar): `config_loja`, chave `pagamento`:
+  `{"checkout_online_ativo": true, "reserva_minutos": 60, "pix": {"chave": "...", "nome": "...", "cidade": "..."}, "infinitepay": {"handle": "..."}}`.
+  O pedido vai para `/pagamento?n=<número>&t=<token>` (token secreto em `vendas.token_publico`; cada cliente só vê o próprio pedido).
+  - **Pix**: código "copia e cola" e QR com o valor **exato** (frete e cupom incluídos), gerado no servidor com o número do pedido como
+    identificador. Pix estático **não avisa quando é pago**: a equipe confere no banco e confirma com
+    `update vendas set status = 'pago', pago_em = now() where numero = <n>;`. O botão "Já fiz o pagamento" só avisa a equipe pelo CallMeBot.
+  - **InfinitePay**: link de checkout (cartão e Pix) criado pela API `api.checkout.infinitepay.io`, que exige ativar o **checkout externo** na
+    conta (app InfinitePay > Configurações). O webhook (`catalogo-api?hook=infinitepay`) não é assinado, então a confirmação sempre passa
+    pelo `payment_check` e só vale se o valor (`amount`) for o do pedido; ao voltar para a loja o cliente também dispara essa conferência.
+  - **Estoque**: quando o pedido vira `pago` (webhook, conferência ou o `update` acima), o gatilho `vendas_baixa_estoque` marca o
+    exemplar único como `vendido` (e baixa a quantidade dos itens com controle de estoque). Enquanto o cliente paga, o exemplar fica reservado
+    (`vendas.reservado_ate`) e outro cliente recebe "reservado para outro cliente". Pagamento que chega depois de a reserva vencer e de o
+    peixe ter sido vendido a outro é marcado como **CONFLITO DE ESTOQUE** em `vendas.observacoes` e avisado à equipe (estorno ou outro peixe).
+  - **Pedido de teste**: coloque o marcador de `config_loja.teste` (chave `marcador`) nas observações do pedido e a equipe **não** recebe aviso.
+  - Valor total: `vendas.valor_total` agora é o **total a pagar** (peixes com desconto + frete); `vendas.frete`, `caixas`, `frete_gratis`,
+    `polo_cidade`, `pagamento_metodo`, `pagamento_ref` detalham.
+
 ## Rodar no computador
 Precisa de Node 20.9 ou superior.
 ```
@@ -97,6 +127,7 @@ API nas alterações (o repositório é público). Se o GitHub tiver commits nov
 ## Segurança
 - A chave `anon` do Supabase é pública por natureza. A `service_role` **nunca** entra aqui.
 - O RLS do banco só libera leitura dos itens ativos do catálogo. Tudo o mais passa pela função `catalogo-api`
-  (a tabela `cupons` e o backup de preços não têm política pública).
+  (a tabela `cupons`, o backup de preços, `config_loja` e `municipios_atendimento` não têm política pública; chave Pix e handle da
+  InfinitePay ficam em `config_loja`, nunca no código).
 - O formulário tem campo isca (honeypot) e limite de pedidos por telefone/hora.
 - Sem emoji e sem texto de venda agressivo: a marca é high ticket (`../conhecimento/marca.md`).
