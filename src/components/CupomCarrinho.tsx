@@ -68,7 +68,7 @@ export function CupomCarrinho() {
         <label htmlFor="cupom" className="sr-only">Código do cupom</label>
         <input
           id="cupom" name="cupom" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={30}
-          placeholder="Código do cupom" value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+          placeholder="Cupom" value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())}
         />
         <button type="submit" className="btn btn-contorno" disabled={verificandoCupom || codigo.trim() === ""}>
           {verificandoCupom ? "Conferindo..." : "Aplicar"}
