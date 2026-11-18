@@ -48,10 +48,18 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
   `update cupons set valido_ate = '2026-12-05 23:59:59-03' where codigo = 'BLACK30';`. Cupom novo: `insert into cupons`
   (código em maiúsculas, `percentual`, `valido_ate`). O visual e o campo do cupom no carrinho seguem a data `BLACK_FRIDAY.fim`
   em `src/lib/config.ts`: se mudar o prazo no banco, mude lá também.
-- **Visual da campanha** (faixa no topo, hero com contagem regressiva, entrada suave dos cards, aviso e campo do cupom no
-  carrinho, nota na página do peixe) é controlado só por `blackFridayAtiva()` em `src/lib/config.ts` e **some sozinho** depois
-  de `fim`: o layout se refaz a cada 60 s. Os textos da campanha ficam em `BLACK_FRIDAY` (mesmo arquivo). Animações respeitam
-  `prefers-reduced-motion` e não usam bibliotecas.
+- **Visual da campanha** (subtítulo "Oferta especial Black Friday" na primeira tela, entrada suave dos cards, linha do cupom em
+  cada card e na página do peixe, aviso e campo do cupom no carrinho) é controlado só por `blackFridayAtiva()` em
+  `src/lib/config.ts` e **some sozinho** depois de `fim`: o layout se refaz a cada 60 s. Os textos da campanha ficam em
+  `BLACK_FRIDAY` (mesmo arquivo). A primeira tela é propositalmente silenciosa: o cupom **não** aparece nela, só nos itens e
+  no carrinho. Animações respeitam `prefers-reduced-motion` e não usam bibliotecas.
+- **Primeira tela e confiança**: título "Aquacarpas / Catálogo" em serifa leve, nota do Google (estrelas em cinza claro,
+  "Nota 4,8 em 26 avaliações", com link), `@aquacarpas` com ícone do Instagram e três pilares (entrega, pagamento, garantia). A
+  nota e o total de avaliações são **digitados à mão** em `GOOGLE` (`src/lib/config.ts`): atualize quando mudarem no Google
+  (e, se houver o link curto de avaliações do Perfil da Empresa, troque `GOOGLE.url`). A carpa que nada ao rolar é o componente
+  `NadoCarpa` (parada com "reduzir movimento"). No resumo do pedido, `ConfiancaPedido` mostra "pagamento confiável pela
+  InfinitePay" (ou, se o CEP já foi calculado e não há pagamento online, "combinado com a nossa equipe") e a garantia
+  (`GARANTIA_CURTA`: reposição ou reembolso, sem prometer prazo).
 - **Preços do reajuste** (+10% no mais caro a +16,7% no mais barato, escala logarítmica): os valores de antes ficam em
   `catalogo_precos_backup_20261117` (RLS ligada, sem acesso público). Para **reverter**:
   `update catalogo c set preco = b.preco_antigo, preco_promocional = b.preco_promocional_antigo, atualizado_em = now() from catalogo_precos_backup_20261117 b where b.codigo = c.codigo and b.preco_novo is not null;`

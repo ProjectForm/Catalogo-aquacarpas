@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Produto } from "@/lib/catalogo";
+import { BLACK_FRIDAY, blackFridayAtiva } from "@/lib/config";
 import { AdicionarBotao } from "./AdicionarBotao";
 import { NomeProduto } from "./NomeProduto";
 import { Preco } from "./Preco";
@@ -35,6 +36,11 @@ export function ProdutoCard({ produto: p, formato }: { produto: Produto; formato
           <Preco p={p} />
           <AdicionarBotao produto={p} />
         </div>
+        {blackFridayAtiva() && !indisponivel && p.preco !== null ? (
+          <p className="cupom-item">
+            Cupom <b>{BLACK_FRIDAY.cupom}</b> · {BLACK_FRIDAY.percentual}% de desconto
+          </p>
+        ) : null}
       </div>
     </article>
   );

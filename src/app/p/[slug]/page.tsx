@@ -94,8 +94,8 @@ export default async function ProdutoPage({ params }: Props) {
           </h1>
           <Preco p={p} />
           {blackFridayAtiva() && p.status === "disponivel" && p.preco !== null ? (
-            <p className="bf-nota">
-              Black Friday: com o cupom {BLACK_FRIDAY.cupom}, {BLACK_FRIDAY.percentual}% de desconto no pedido, até {BLACK_FRIDAY.fimTexto}.
+            <p className="cupom-item cupom-produto">
+              Cupom <b>{BLACK_FRIDAY.cupom}</b> · {BLACK_FRIDAY.percentual}% de desconto no pedido, até {BLACK_FRIDAY.fimTexto}
             </p>
           ) : null}
 

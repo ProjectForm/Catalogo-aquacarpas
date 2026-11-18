@@ -23,9 +23,8 @@ export const BLACK_FRIDAY = {
   fim: "2026-11-30T23:59:59-03:00",
   fimTexto: "30/11",
   fimTextoLongo: "30 de novembro",
-  faixa: "Black Friday: cupom BLACK30, 30% em qualquer carpa do site, até 30/11.",
-  heroTitulo: "Black Friday Aquacarpas",
-  heroTexto: "Cupom BLACK30: 30% de desconto em qualquer carpa, até 30 de novembro.",
+  /** Subtítulo discreto sob o título da primeira tela (sem cupom: o cupom aparece nos itens). */
+  subtitulo: "Oferta especial Black Friday",
 } as const;
 
 export function blackFridayAtiva(agora: number = Date.now()): boolean {
@@ -43,6 +42,21 @@ export const SITE = {
   instagramUrl: "https://www.instagram.com/aquacarpas/",
   email: "aquacarpas@hotmail.com",
 } as const;
+
+/**
+ * Avaliações do Google exibidas na primeira tela. Valores digitados à mão: atualize `nota` e `total` quando mudarem
+ * no Perfil da Empresa no Google. O link é a busca "aquacarpas" sem parâmetros de sessão (ei, sxsrf, gs_lp...); se
+ * houver um link curto de avaliações (g.page/.../review), troque aqui para abrir direto na lista de avaliações.
+ */
+export const GOOGLE = {
+  nota: 4.8,
+  notaTexto: "4,8",
+  total: 26,
+  url: "https://www.google.com/search?q=aquacarpas",
+} as const;
+
+/** Frase da garantia exibida no carrinho (mesma ideia da política de garantia de envio, sem prometer prazo de reembolso). */
+export const GARANTIA_CURTA = "Se o seu peixe não chegar bem, repomos o peixe ou devolvemos o seu dinheiro.";
 
 export const RETIRADA = {
   endereco: "R. Joséfa Voltareli Sanfelice, 301 - Jardim Antunes, São José do Rio Preto - SP, 15047-051",

@@ -7,6 +7,7 @@ import { avisarPagamento, iniciarPagamento, statusPedido } from "@/lib/checkout"
 import type { StatusPedido } from "@/lib/checkout";
 import { linkWhatsApp } from "@/lib/config";
 import { brl } from "@/lib/format";
+import { ConfiancaPedido } from "./ConfiancaPedido";
 
 const hora = (iso: string) =>
   new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
@@ -279,6 +280,7 @@ export function PagamentoClient() {
               <span>Total a pagar</span>
               <strong>{brl(total)}</strong>
             </div>
+            <ConfiancaPedido online />
             <p className="nota">
               {retiradaPolo
                 ? `Retirada em ${pedido.polo_cidade}: nossa equipe informa o local pelo WhatsApp. `

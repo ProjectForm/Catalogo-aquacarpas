@@ -12,6 +12,7 @@ import type { Restricao, TipoEntrega } from "@/lib/entrega";
 import { ESTADOS, brl, documentoValido, mascaraCep, mascaraDocumento, mascaraTelefone, somenteDigitos } from "@/lib/format";
 import { capturarUtm, evento, sessaoId, utmAtual } from "@/lib/tracking";
 import { useCart } from "./CartProvider";
+import { ConfiancaPedido } from "./ConfiancaPedido";
 import { CupomCarrinho } from "./CupomCarrinho";
 
 interface Dados {
@@ -480,6 +481,7 @@ export function EntregaForm() {
                 <strong>{brl(vTotal)}</strong>
               </div>
             )}
+            <ConfiancaPedido online={orcFresco ? pagarOnline : null} />
             <p className="nota">
               {comFrete
                 ? pagarOnline
@@ -487,6 +489,8 @@ export function EntregaForm() {
                   : "Frete calculado pelo CEP informado. Depois de enviar, confirmamos disponibilidade e pagamento com você pelo WhatsApp."
                 : orcFresco?.abaixo_minimo && orcFresco.destino && orcFresco.destino.situacao !== "fora"
                 ? `Para pedidos a partir de ${brl(orcFresco.pedido_minimo)} o frete é calculado aqui. Neste pedido a nossa equipe informa o valor do frete pelo WhatsApp, e depois confirmamos disponibilidade e pagamento com você.`
+                : !chaveOrc
+                ? "Informe o seu CEP em “Seus dados” para calcular o frete aqui no site."
                 : "Frete não incluso: nossa equipe informa o valor pelo WhatsApp. Depois de enviar, confirmamos disponibilidade, frete e pagamento com você."}
             </p>
           </>

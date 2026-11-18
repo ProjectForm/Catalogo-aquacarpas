@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { CategoriaNav } from "@/components/CategoriaNav";
-import { ContagemRegressiva } from "@/components/ContagemRegressiva";
+import { NadoCarpa } from "@/components/NadoCarpa";
 import { NomeProduto } from "@/components/NomeProduto";
+import { Pilares } from "@/components/Pilares";
 import { ProdutoCard } from "@/components/ProdutoCard";
+import { ProvaSocial } from "@/components/ProvaSocial";
 import { RevelarAoRolar } from "@/components/RevelarAoRolar";
 import { TrackView } from "@/components/TrackView";
 import { listarSecoes, type Produto } from "@/lib/catalogo";
-import { BLACK_FRIDAY, blackFridayAtiva, POLITICAS, SITE } from "@/lib/config";
+import { BLACK_FRIDAY, blackFridayAtiva, SITE } from "@/lib/config";
 import { brl } from "@/lib/format";
 
 export const revalidate = 60;
@@ -33,20 +35,19 @@ export default async function Home() {
     <>
       <TrackView />
       {bf ? <RevelarAoRolar /> : null}
-      <section className={`hero${bf ? " hero-bf" : ""}`}>
+      <section className="hero hero-suave">
         <div className="container hero-grid">
           <div>
-            <p className="eyebrow">{SITE.nome} · {SITE.cidade}</p>
-            <h1>{bf ? BLACK_FRIDAY.heroTitulo : SITE.tagline}</h1>
-            <p className="sub">
-              {bf
-                ? BLACK_FRIDAY.heroTexto
-                : "Carpas Nishikigoi criadas e selecionadas com cuidado. Mais de 10 anos de convivência com carpas e mais de 7 levando peixes para o lago dos nossos clientes."}
-            </p>
-            {bf ? <ContagemRegressiva /> : null}
+            <h1>
+              <span className="t-marca">{SITE.nome}</span>
+              <span className="t-cat">Catálogo</span>
+            </h1>
+            <p className="subtitulo">{bf ? BLACK_FRIDAY.subtitulo : SITE.tagline}</p>
+            <ProvaSocial />
+            <Pilares />
             <div className="acoes">
-              <a href="#catalogo" className="btn btn-primario">Ver o catálogo</a>
-              <Link href="/entrega" className="btn btn-contorno">Como funciona a entrega</Link>
+              <a href="#catalogo" className="btn btn-claro">Ver o catálogo</a>
+              <Link href="/entrega" className="link-suave">Como funciona a entrega</Link>
             </div>
           </div>
           {destaque ? (
@@ -63,22 +64,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="confianca" aria-label="Garantias">
-        <div className="container">
-          <div className="item">
-            <h3>{POLITICAS.prazo.titulo}</h3>
-            <p>{POLITICAS.prazo.texto} {POLITICAS.jejum.texto}</p>
-          </div>
-          <div className="item">
-            <h3>{POLITICAS.transporte.titulo}</h3>
-            <p>{POLITICAS.transporte.texto}</p>
-          </div>
-          <div className="item">
-            <h3>{POLITICAS.garantia.titulo}</h3>
-            <p>Foto ou vídeo em até 3 horas do recebimento, pelo WhatsApp. Reposição ou reembolso integral, conforme avaliação do caso.</p>
-          </div>
-        </div>
-      </section>
+      <NadoCarpa />
 
       <CategoriaNav itens={secoes.map((s) => ({ slug: s.categoria.slug, nome: s.categoria.nome, total: s.produtos.length }))} />
 
