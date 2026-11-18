@@ -11,6 +11,8 @@ export function WhatsAppFlutuante() {
   const { quantidadeTotal, pronto } = useCart();
   // Sobe um pouco quando a barra "Finalizar pedido" está visível, para não cobrir o botão dela.
   const comBarra = pronto && quantidadeTotal > 0 && !path.startsWith("/entrega") && !path.startsWith("/obrigado") && !path.startsWith("/pagamento");
+  // Nas telas de compra (celular) o botão flutuante cobriria total, botões e campos: lá a ajuda fica nos textos da própria página.
+  const naCompra = path.startsWith("/entrega") || path.startsWith("/pagamento");
   const texto = path.startsWith("/p/")
     ? "Olá! Tenho interesse em um peixe do catálogo da Aquacarpas."
     : "Olá! Vim pelo catálogo da Aquacarpas e gostaria de ajuda.";
@@ -20,7 +22,7 @@ export function WhatsAppFlutuante() {
       href={linkWhatsApp(texto)}
       target="_blank"
       rel="noopener noreferrer"
-      className={`whats-flutuante${comBarra ? " acima-barra" : ""}`}
+      className={`whats-flutuante${comBarra ? " acima-barra" : ""}${naCompra ? " na-compra" : ""}`}
       aria-label="Falar com a Aquacarpas no WhatsApp"
       onClick={() => evento("clique_whatsapp")}
     >

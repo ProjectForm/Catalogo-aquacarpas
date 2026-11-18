@@ -22,7 +22,10 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+/* overflow-x: clip é a rede de segurança: nenhum elemento mais largo que a tela pode criar rolagem lateral no celular
+   (clip, ao contrário de hidden, não quebra o cabeçalho fixo). As causas reais são tratadas nos próprios layouts. */
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: clip; }
+body { overflow-x: clip; }
 body {
   margin: 0;
   background: var(--bg);
@@ -60,7 +63,7 @@ p { margin: 0; }
 /* ---------- hero ---------- */
 .hero { padding: clamp(48px, 8vw, 96px) 0 clamp(40px, 6vw, 72px); }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
-@media (max-width: 860px) { .hero-grid { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .hero-grid { grid-template-columns: minmax(0, 1fr); } }
 .hero-foto { display: block; border: 1px solid var(--linha); border-radius: var(--raio); overflow: hidden; background: var(--bg-2); }
 .hero-foto .img { overflow: hidden; background: var(--bg-3); }
 .hero-foto img { display: block; width: 100%; height: auto; max-height: 72vh; object-fit: contain; transition: transform .6s ease; }
@@ -115,7 +118,7 @@ p { margin: 0; }
 
 .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 22px; }
 .grade.grande { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-@media (max-width: 420px) { .grade, .grade.grande { grid-template-columns: 1fr; } }
+@media (max-width: 420px) { .grade, .grade.grande { grid-template-columns: minmax(0, 1fr); } }
 
 .cartao { display: flex; flex-direction: column; background: var(--bg-2); border: 1px solid var(--linha); border-radius: var(--raio); overflow: hidden; transition: border-color .2s; }
 .cartao:hover { border-color: var(--linha-forte); }
@@ -144,7 +147,7 @@ p { margin: 0; }
 
 /* ---------- produto ---------- */
 .produto { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(28px, 5vw, 64px); padding-block: clamp(28px, 5vw, 56px) 40px; align-items: start; }
-@media (max-width: 860px) { .produto { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .produto { grid-template-columns: minmax(0, 1fr); } }
 .migalha { font-size: 0.82rem; color: var(--suave); padding-top: 26px; }
 .migalha a:hover { color: var(--texto-forte); }
 /* Foto inteira na página do peixe (fotos verticais, como a do Kujaku, não podem perder a cauda) */
@@ -181,12 +184,14 @@ p { margin: 0; }
 .card-info h3 { font-size: 1.3rem; margin-bottom: 8px; }
 .card-info p { color: var(--suave); font-size: 0.92rem; }
 .duas-colunas { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: clamp(24px, 4vw, 48px); align-items: start; margin-top: 44px; }
-@media (max-width: 900px) { .duas-colunas { grid-template-columns: 1fr; } }
+/* minmax(0, 1fr): com "1fr" puro a coluna não encolhe abaixo do conteúdo mais largo (ex.: campo do cupom) e estoura a tela do celular. */
+@media (max-width: 900px) { .duas-colunas { grid-template-columns: minmax(0, 1fr); } }
+.duas-colunas > *, .form, .resumo, .bloco-form, .opcoes-pagamento { min-width: 0; }
 
 .form { display: grid; gap: 30px; }
 .bloco-form { display: grid; gap: 16px; }
 .bloco-form > h2 { font-size: 1.7rem; padding-bottom: 10px; border-bottom: 1px solid var(--linha); }
-.campos { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.campos { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
 .campo { display: flex; flex-direction: column; gap: 6px; grid-column: span 6; }
 .campo.m3 { grid-column: span 3; } .campo.m2 { grid-column: span 2; } .campo.m4 { grid-column: span 4; }
 @media (max-width: 560px) { .campo.m3, .campo.m2, .campo.m4 { grid-column: span 6; } .campo.m2.uf { grid-column: span 3; } }
@@ -196,10 +201,10 @@ p { margin: 0; }
 .campo textarea { min-height: 96px; resize: vertical; }
 .campo input:focus, .campo select:focus, .campo textarea:focus { outline: none; border-color: var(--acento); box-shadow: 0 0 0 3px rgba(232, 90, 44, 0.22); }
 .campo .ajuda { font-size: 0.78rem; color: var(--suave); }
-.escolhas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 560px) { .escolhas { grid-template-columns: 1fr; } }
-.escolhas.tres { grid-template-columns: repeat(3, 1fr); }
-@media (max-width: 860px) { .escolhas.tres { grid-template-columns: 1fr; } }
+.escolhas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .escolhas { grid-template-columns: minmax(0, 1fr); } }
+.escolhas.tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 860px) { .escolhas.tres { grid-template-columns: minmax(0, 1fr); } }
 .escolha.desativada { opacity: 0.45; cursor: not-allowed; }
 .escolha { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--linha-forte); border-radius: var(--raio); padding: 14px; cursor: pointer; background: var(--bg-2); }
 .escolha:has(input:checked) { border-color: var(--acento); background: rgba(232, 90, 44, 0.08); }
@@ -214,7 +219,7 @@ p { margin: 0; }
 .resumo { position: sticky; top: 90px; border: 1px solid var(--linha-forte); background: var(--bg-2); border-radius: var(--raio); padding: 22px; }
 @media (max-width: 900px) { .resumo { position: static; order: -1; } }
 .resumo h2 { font-size: 1.6rem; margin-bottom: 14px; }
-.linha-item { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; padding: 12px 0; border-top: 1px solid var(--linha); align-items: center; }
+.linha-item { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; padding: 12px 0; border-top: 1px solid var(--linha); align-items: center; }
 .linha-item img { width: 56px; height: 46px; object-fit: cover; border-radius: 3px; }
 .linha-item .nome { font-size: 0.92rem; color: var(--texto-forte); line-height: 1.3; }
 .linha-item .sub { font-size: 0.78rem; color: var(--suave); }
@@ -300,7 +305,7 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 .cupom-aviso { margin-top: 8px; font-size: 0.96rem; line-height: 1.5; color: var(--texto); }
 .cupom-aviso strong { color: var(--texto-forte); font-weight: 600; letter-spacing: 0.05em; }
 .cupom-form { display: flex; gap: 8px; margin-top: 16px; }
-.cupom-form input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--linha-forte); color: var(--texto-forte); border-radius: var(--raio); padding: 11px 12px; font: 400 0.95rem var(--sans); letter-spacing: 0.06em; }
+.cupom-form input { flex: 1 1 0; width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--linha-forte); color: var(--texto-forte); border-radius: var(--raio); padding: 12px; font: 400 1rem var(--sans); letter-spacing: 0.06em; }
 .cupom-form input::placeholder { letter-spacing: 0; color: var(--suave); }
 .cupom-form input:focus { outline: none; border-color: var(--acento); box-shadow: 0 0 0 3px rgba(232, 90, 44, 0.22); }
 .cupom-form .btn { padding: 11px 18px; }
@@ -323,7 +328,7 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 .total.destaque strong { font-size: clamp(2.6rem, 7vw, 3.2rem); line-height: 1.05; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .total.atualizando strong { opacity: 0.5; }
 .suave { color: var(--suave); }
-.barra-pedido .info .com-cupom { display: block; font-size: 0.72rem; color: var(--verde); margin-top: 1px; }
+.barra-pedido .info .com-cupom { font-size: 0.78rem; color: var(--verde); white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
@@ -339,11 +344,51 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 .intro-bloco { color: var(--suave); font-size: 0.95rem; max-width: 60ch; }
 .intro-bloco strong { color: var(--texto-forte); font-weight: 600; }
 .pix-grade { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
-@media (max-width: 640px) { .pix-grade { grid-template-columns: 1fr; justify-items: center; } .pix-lado { width: 100%; } }
+@media (max-width: 640px) { .pix-grade { grid-template-columns: minmax(0, 1fr); justify-items: center; } .pix-lado { width: 100%; } }
 .pix-qr { background: #fff; padding: 10px; border-radius: var(--raio); width: 220px; height: 220px; }
 .pix-qr svg { display: block; width: 100%; height: 100%; }
 .pix-qr-vazio { width: 100%; height: 100%; }
 .pix-lado { display: grid; gap: 10px; align-content: start; }
 .pix-codigo { width: 100%; background: var(--bg-2); border: 1px solid var(--linha-forte); color: var(--suave); border-radius: var(--raio); padding: 10px 12px; font: 400 0.74rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: none; word-break: break-all; }
 .ajuda-pix { margin-top: 12px; font-size: 0.86rem; color: var(--suave); }
-.linha-item.sem-foto { grid-template-columns: 1fr auto; }
+.linha-item.sem-foto { grid-template-columns: minmax(0, 1fr) auto; }
+
+/* ====================================================================================================================
+   Celular: áreas de toque confortáveis (mínimo de 40 a 44 px, como pedem iOS e Android) e toque sem atraso.
+   Vale em telas estreitas e em qualquer aparelho de toque.
+   ==================================================================================================================== */
+a, button, summary, label { touch-action: manipulation; -webkit-tap-highlight-color: rgba(232, 90, 44, 0.18); }
+@media (max-width: 760px), (pointer: coarse) {
+  .btn { min-height: 48px; }
+  .qtd { margin-top: 8px; }
+  .qtd button { width: 42px; height: 42px; font-size: 1.2rem; }
+  .qtd span { min-width: 34px; font-size: 1rem; }
+  .remover { display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; margin-left: 2px; font-size: 0.84rem; }
+  .cupom-usar { display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; font-size: 0.9rem; }
+  .atalhos a { display: inline-block; padding-block: 10px; }
+  .rodape-site a { display: inline-block; padding-block: 6px; }
+  .rodape-site p { margin: 2px 0; }
+  .cartao h3 a { display: inline-block; padding-block: 6px; }
+  .migalha a { display: inline-block; padding-block: 8px; }
+  .marcar input { width: 22px; height: 22px; margin-top: 3px; }
+  .abas-lista a { padding: 10px 18px; }
+  .linha-item { gap: 10px; }
+}
+
+/* barra do pedido: o texto à esquerda encolhe e o botão nunca quebra em duas linhas */
+.barra-pedido .info { min-width: 0; flex: 1 1 auto; line-height: 1.3; }
+.barra-pedido .btn { flex: none; white-space: nowrap; }
+@media (max-width: 380px) { .barra-pedido { padding-inline: 14px; gap: 10px; } .barra-pedido .btn { padding-inline: 16px; } }
+
+/* celular, telas de compra: sem botão flutuante de WhatsApp por cima de totais e botões */
+@media (max-width: 760px) { .whats-flutuante.na-compra { display: none; } }
+
+/* celular estreito: item do pedido em duas colunas (foto | nome, quantidade e valor) para o nome não ficar espremido */
+@media (max-width: 440px) {
+  .linha-item { grid-template-columns: 48px minmax(0, 1fr); align-items: start; }
+  .linha-item img { width: 48px; height: 42px; }
+  .linha-item .valor { grid-column: 2; text-align: left; font-size: 1rem; color: var(--texto-forte); font-weight: 500; }
+  .linha-item.sem-foto { grid-template-columns: minmax(0, 1fr) auto; }
+  .linha-item.sem-foto .valor { grid-column: auto; text-align: right; }
+}
+.campo .ajuda-ok { color: var(--verde); }

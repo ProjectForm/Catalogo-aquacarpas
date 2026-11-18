@@ -13,9 +13,9 @@ export function CartBar() {
   return (
     <div className="barra-pedido" role="region" aria-label="Resumo do pedido">
       <div className="info">
-        {quantidadeTotal} {quantidadeTotal === 1 ? "item" : "itens"} no pedido
+        {quantidadeTotal} {quantidadeTotal === 1 ? "item" : "itens"}
+        {comCupom ? <span className="com-cupom"> · com {cupom.codigo}</span> : " no pedido"}
         <b>{brl(comCupom ? cupom.total_final : total)}</b>
-        {comCupom ? <span className="com-cupom">com {cupom.codigo}</span> : null}
       </div>
       <Link href="/entrega" className="btn btn-primario">
         Finalizar pedido

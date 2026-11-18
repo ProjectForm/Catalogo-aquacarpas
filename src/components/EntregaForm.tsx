@@ -310,7 +310,18 @@ export function EntregaForm() {
                     if (somenteDigitos(v).length === 8) void buscarCep(v);
                   }}
                 />
-                <span className="ajuda">{buscandoCep ? "Buscando endereço..." : "Preenchemos o restante pelo CEP."}</span>
+                {/* No celular o resumo fica lá em cima: mostra o frete aqui, logo abaixo do CEP digitado. */}
+                <span className={`ajuda${orcFresco?.frete?.gratis ? " ajuda-ok" : ""}`} role="status" aria-live="polite">
+                  {buscandoCep
+                    ? "Buscando endereço..."
+                    : calculandoFrete
+                    ? "Calculando o frete..."
+                    : orcFresco?.frete
+                    ? orcFresco.frete.gratis
+                      ? "Frete grátis para este CEP."
+                      : `Frete: ${brl(orcFresco.frete.valor)} (${orcFresco.frete.caixas} ${orcFresco.frete.caixas === 1 ? "caixa" : "caixas"}). O total está no resumo do pedido.`
+                    : "Preenchemos o restante pelo CEP."}
+                </span>
               </div>
               <div className="campo m4">
                 <label htmlFor="rua">Rua{!envio ? <span className="opcional"> (opcional)</span> : null}</label>
