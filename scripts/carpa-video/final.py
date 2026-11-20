@@ -8,7 +8,7 @@ FIM = int(sys.argv[4]) if len(sys.argv) > 4 else 142
 SAIDA = sys.argv[5] if len(sys.argv) > 5 else 'cortes'
 GLOW = int(sys.argv[1]) if len(sys.argv) > 1 else 26    # alcance do brilho vermelho (px); 0 = sem brilho
 FORCA = float(sys.argv[2]) if len(sys.argv) > 2 else 0.85
-FUNDO = 10
+FUNDO = int(sys.argv[6]) if len(sys.argv) > 6 else 0   # piso de preto (0 = transparencia limpa)
 BORDA = 34                   # desvanece nas bordas do video (a cauda sai do quadro)
 
 # janela de borda: 1 no miolo, cai suavemente a 0 nas bordas

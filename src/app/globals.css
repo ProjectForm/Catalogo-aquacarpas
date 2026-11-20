@@ -310,7 +310,7 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
   --estrela-vazia: rgba(220, 192, 136, 0.2);
 }
 
-.hero-suave { --h1: clamp(2.9rem, 8.4vw, 5.1rem); position: relative; overflow: hidden; padding: clamp(34px, 6vw, 76px) 0 clamp(26px, 4vw, 48px); }
+.hero-suave { --h1: clamp(2.9rem, 8.4vw, 5.1rem); position: relative; overflow: hidden; isolation: isolate; padding: clamp(34px, 6vw, 76px) 0 clamp(26px, 4vw, 48px); }
 .hero-suave::before {
   content: ""; position: absolute; inset: -25% -10%; z-index: -1; pointer-events: none;
   background:
@@ -324,12 +324,16 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 .hero-suave h1 .t-cat::before { content: ""; display: inline-block; width: 0.8em; height: 1px; background: currentColor; opacity: 0.5; vertical-align: 0.3em; margin-right: 0.3em; }
 .hero-suave .subtitulo { margin-top: 20px; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: var(--suave); }
 
-/* Carpa real (video recortado, sem marca d'agua nem reflexos) nadando no espaco livre ao lado do titulo.
-   O fundo do video e quase preto e o "lighten" so deixa passar o que for mais claro que a pagina: a carpa aparece
-   e a caixa do video some. Por isso o hero NAO pode ter isolation: isolate (o fundo da pagina precisa entrar na mistura). */
+/* Carpa real (recorte do video da Aquacarpas: so a carpa, sem marca d'agua nem reflexos) nadando em CIRCULOS no canto direito
+   do hero, longe do titulo. E uma imagem WebP animada com transparencia de verdade (sem caixa preta em nenhum aparelho).
+   Um quadrado (--S) guarda a orbita; o giro de 360 graus leva a carpa, que ja sai virada para a tangente do circulo.
+   Tudo em % do quadrado, entao o conjunto escala junto. A carpa mede 56% do quadrado e o raio da orbita 30%.
+   O quadrado e limitado em largura (nao encostar no titulo) e em altura (cabe entre o topo e o subtitulo: 0,824 x lado). */
 .hero-texto { position: relative; }
-.carpa-nada { position: absolute; top: calc(var(--h1) * 0.2); right: 0; width: calc(100% - var(--h1) * 4.75); min-width: 104px; max-width: 250px; aspect-ratio: 520 / 212; pointer-events: none; mix-blend-mode: lighten; transform: rotate(-7deg); transform-origin: 70% 50%; }
-.carpa-nada video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.orbita { position: absolute; right: 0; top: calc(var(--h1) * 1.05 - 1px); width: clamp(100px, min(calc(100% - var(--h1) * 4.75 - 22px), calc(var(--h1) * 2.55 + 21px)), 168px); aspect-ratio: 1; transform: translateY(-50%); pointer-events: none; }
+.orbita-giro { position: absolute; inset: 0; animation: orbita-volta 9s linear infinite; will-change: transform; }
+.orbita-peixe { position: absolute; left: 52%; top: 38.8%; width: 56%; height: auto; aspect-ratio: 256 / 102; transform: rotate(90deg); }
+@keyframes orbita-volta { to { transform: rotate(360deg); } }
 
 /* nota do Google e Instagram, lado a lado */
 .so-estreito { display: none; }
