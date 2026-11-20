@@ -38,7 +38,11 @@ export function ProdutoCard({ produto: p, formato }: { produto: Produto; formato
         </div>
         {blackFridayAtiva() && !indisponivel && p.preco !== null ? (
           <p className="cupom-item">
-            Cupom <b>{BLACK_FRIDAY.cupom}</b> · {BLACK_FRIDAY.percentual}% de desconto
+            <span>
+              Cupom <b>{BLACK_FRIDAY.cupom}</b>
+            </span>
+            <span className="cupom-sep"> · </span>
+            <span>{BLACK_FRIDAY.percentual}% de desconto</span>
           </p>
         ) : null}
       </div>

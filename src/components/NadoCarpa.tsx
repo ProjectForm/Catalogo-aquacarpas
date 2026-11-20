@@ -2,87 +2,80 @@
 
 import { useEffect, useRef } from "react";
 
+/** Altura (px) da zona, contada a partir da base da primeira tela, em que a carpa nada. Depois dela, some. */
+const ZONA = 1500;
 /**
- * Uma carpa em traço fino, monocromática, que nada pela faixa enquanto a página rola: ao descer ela segue para a
- * direita, ao subir volta (virando de lado). Só mexe em transform e opacidade (nada de layout), com um único
- * requestAnimationFrame enquanto houver movimento e um listener de rolagem passivo. Com "reduzir movimento" fica parada.
- * É decorativa (aria-hidden).
+ * Quanto a carpa desce na página para cada px rolado. Um pouco mais que 1: ela desce mais depressa que o conteúdo,
+ * então, na tela, vai ficando um pouco à frente de quem rola, como quem mostra o caminho para baixo.
+ */
+const RITMO = 1.2;
+/** Largura de cada curva do percurso (px) e quanto ela serpenteia para os lados. */
+const ONDA = 120;
+
+const limitar = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+/**
+ * Uma carpa vista de cima, em traço fino e monocromática, que sai de baixo do cabeçalho da lista (as abas) e nada para
+ * baixo, em curvas suaves, pela grade de produtos enquanto a página rola. Ao rolar para cima ela dá meia-volta.
+ * Não ocupa espaço no layout (zona de altura zero com a carpa em posição absoluta), só mexe em transform e opacidade,
+ * usa um único requestAnimationFrame enquanto houver movimento e um listener de rolagem passivo.
+ * Com "reduzir movimento" nem aparece. É decorativa (aria-hidden) e não recebe toque.
  */
 export function NadoCarpa() {
-  const faixaRef = useRef<HTMLDivElement>(null);
+  const zonaRef = useRef<HTMLDivElement>(null);
   const peixeRef = useRef<HTMLDivElement>(null);
-  const corpoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const faixa = faixaRef.current;
+    const zona = zonaRef.current;
     const peixe = peixeRef.current;
-    const corpo = corpoRef.current;
-    if (!faixa || !peixe || !corpo) return;
+    if (!zona || !peixe) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const reduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let largura = faixa.clientWidth;
-    let larguraPeixe = peixe.offsetWidth;
-    let atual = 0; // posição desenhada (0 a 1)
-    let alvo = 0; // posição pedida pela rolagem (0 a 1)
-    let sentido = 1; // 1 = nadando para a direita, -1 = para a esquerda
+    let largura = zona.clientWidth;
+    let compr = peixe.offsetHeight;
+    let larg = peixe.offsetWidth;
+    let atual = 0; // rolagem desenhada (px)
+    let alvo = 0; // rolagem real (px)
+    let giro = 0; // 0 = nadando para baixo, 1 = para cima (meia-volta suave)
     let quadro = 0;
 
-    const medir = () => {
-      largura = faixa.clientWidth;
-      larguraPeixe = peixe.offsetWidth;
-    };
-
-    /** Entra na tela por baixo (0) e sai por cima (1). */
-    const calcularAlvo = () => {
-      const r = faixa.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
-      alvo = Math.min(1, Math.max(0, (vh - r.top) / (vh + r.height)));
-    };
-
     const pintar = () => {
-      const curso = Math.max(0, largura - larguraPeixe);
-      const fase = atual * Math.PI * 4; // duas ondulações ao longo do percurso
-      const x = atual * curso;
-      const y = Math.sin(fase) * 5;
-      const inclinacao = Math.atan((5 * Math.PI * 4 * Math.cos(fase)) / Math.max(curso, 1)) * (180 / Math.PI) * 0.6;
-      peixe.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotate(${inclinacao.toFixed(2)}deg)`;
-      corpo.style.transform = `scaleX(${sentido})`;
-      // some suavemente nas pontas do percurso
-      const borda = Math.min(atual, 1 - atual);
-      peixe.style.opacity = String(Math.min(1, borda / 0.1) * 0.9);
+      const percorrido = atual * RITMO; // quanto a carpa já desceu dentro da zona
+      const topo = -compr + percorrido; // começa toda escondida acima da zona e vai saindo de baixo das abas
+      const amplitude = Math.min(largura * 0.26, 150);
+      const x = largura / 2 + amplitude * Math.sin(percorrido / ONDA);
+      const inclinacao = -Math.atan((amplitude / ONDA) * Math.cos(percorrido / ONDA)) * (180 / Math.PI);
+      peixe.style.transform = `translate3d(${(x - larg / 2).toFixed(1)}px, ${topo.toFixed(1)}px, 0) rotate(${(inclinacao + 180 * giro).toFixed(1)}deg)`;
+      const entra = limitar((topo + compr) / 90, 0, 1);
+      const sai = limitar((ZONA - 40 - topo) / 220, 0, 1);
+      peixe.style.opacity = String((0.85 * entra * sai).toFixed(3));
     };
-
-    if (reduzido) {
-      atual = 0.5;
-      pintar();
-      return;
-    }
 
     const animar = () => {
       quadro = 0;
       const d = alvo - atual;
-      if (Math.abs(d) < 0.0004) {
-        atual = alvo;
-        pintar();
-        return;
-      }
-      if (Math.abs(d) > 0.0009) sentido = d > 0 ? 1 : -1;
-      atual += d * 0.1;
+      const giroAlvo = d < -0.5 ? 1 : d > 0.5 ? 0 : Math.round(giro);
+      atual += d * 0.12;
+      giro += (giroAlvo - giro) * 0.14;
+      if (Math.abs(d) < 0.3) atual = alvo;
+      if (Math.abs(giroAlvo - giro) < 0.01) giro = giroAlvo;
       pintar();
-      quadro = requestAnimationFrame(animar);
+      if (atual !== alvo || giro !== giroAlvo) quadro = requestAnimationFrame(animar);
     };
 
     const aoRolar = () => {
-      calcularAlvo();
+      alvo = Math.max(0, window.scrollY);
       if (!quadro) quadro = requestAnimationFrame(animar);
     };
     const aoRedimensionar = () => {
-      medir();
-      aoRolar();
+      largura = zona.clientWidth;
+      compr = peixe.offsetHeight;
+      larg = peixe.offsetWidth;
+      pintar();
     };
 
-    calcularAlvo();
-    atual = alvo; // começa já no ponto certo, sem correr desde a esquerda
+    alvo = Math.max(0, window.scrollY);
+    atual = alvo; // abriu a página já rolada (voltar, recarregar): começa no ponto certo
     pintar();
     window.addEventListener("scroll", aoRolar, { passive: true });
     window.addEventListener("resize", aoRedimensionar);
@@ -94,26 +87,27 @@ export function NadoCarpa() {
   }, []);
 
   return (
-    <div ref={faixaRef} className="nado" aria-hidden="true">
-      <div ref={peixeRef} className="nado-peixe">
-        <div ref={corpoRef} className="nado-corpo">
-          <svg viewBox="0 0 160 56" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-            {/* corpo */}
-            <path d="M150 28C140 18 118 10 92 12 70 14 52 22 38 27 52 32 70 42 92 44 118 46 140 38 150 28Z" />
-            {/* cauda */}
+    <div className="nado" aria-hidden="true">
+      <div ref={zonaRef} className="nado-zona">
+        <div ref={peixeRef} className="nado-peixe">
+          {/* carpa vista de cima, cabeça para baixo; traço de 1 px */}
+          <svg viewBox="0 0 56 120" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M28 116C37 112 42 98 41 84C40 68 34 52 30 40L26 40C22 52 16 68 15 84C14 98 19 112 28 116Z" />
             <g className="koi-cauda">
-              <path d="M38 27C28 22 18 14 6 6 10 18 12 24 10 28 12 32 10 38 6 50 18 42 28 32 38 27Z" />
+              <path d="M30 40C34 30 38 18 35 6C32 12 29 14 28 15C27 14 24 12 21 6C18 18 22 30 26 40" />
             </g>
-            {/* nadadeira dorsal e peitoral */}
-            <path d="M96 12C90 6 76 5 66 8 74 10 80 12 84 14" />
-            <g className="koi-peitoral">
-              <path d="M118 34C110 42 100 46 92 50 102 50 112 46 122 38" />
+            <g className="koi-peitoral-d">
+              <path d="M40 100C46 98 51 92 53 84C47 88 43 92 40 94" />
             </g>
-            {/* guelra, olho e manchas (kohaku) em traço bem leve */}
-            <path d="M124 20C128 26 128 32 124 38" />
-            <circle cx="138" cy="25" r="1.3" fill="currentColor" stroke="none" />
-            <path className="koi-mancha" d="M98 18C86 17 76 22 72 28 80 31 92 31 102 27 106 23 104 19 98 18Z" />
-            <path className="koi-mancha" d="M60 28C54 27 48 28 44 28 50 31 56 32 62 31Z" />
+            <g className="koi-peitoral-e">
+              <path d="M16 100C10 98 5 92 3 84C9 88 13 92 16 94" />
+            </g>
+            <path d="M39 66C43 64 46 60 47 55C43 58 40 60 38 62" />
+            <path d="M17 66C13 64 10 60 9 55C13 58 16 60 18 62" />
+            <circle cx="35" cy="104" r="1.3" fill="currentColor" stroke="none" />
+            <circle cx="21" cy="104" r="1.3" fill="currentColor" stroke="none" />
+            <path className="koi-mancha" d="M22 82C22 72 30 70 34 76C36 82 30 90 24 90Z" />
+            <path className="koi-mancha" d="M24 58C24 52 30 50 32 54C32 60 28 64 24 62Z" />
           </svg>
         </div>
       </div>

@@ -17,7 +17,7 @@ function CincoEstrelas() {
 
 /**
  * Estrelas da nota: a camada de baixo é a fileira apagada e a de cima, com a largura cortada na nota (4,8 de 5),
- * mostra as estrelas preenchidas. A última estrela fica 80% cheia.
+ * mostra as estrelas preenchidas (dourado suave). A última estrela fica 80% cheia.
  */
 function Estrelas() {
   const cheias = Math.floor(GOOGLE.nota);
@@ -44,19 +44,22 @@ function IconeInstagram() {
   );
 }
 
-/** Nota do Google (com link para as avaliações) e o Instagram, em tons neutros. Uma linha discreta na primeira tela. */
+/**
+ * Nota do Google (com link para as avaliações) e o Instagram, lado a lado, em tons neutros e dourado suave nas estrelas.
+ * No celular o texto da nota encurta ("4,8 · 26 avaliações") para caber tudo numa linha só.
+ */
 export function ProvaSocial() {
+  const link = (
+    <a href={GOOGLE.url} target="_blank" rel="noopener noreferrer">
+      {GOOGLE.total} avaliações
+    </a>
+  );
   return (
     <div className="prova">
       <p className="avaliacao">
         <Estrelas />
-        <span>
-          Nota {GOOGLE.notaTexto} em{" "}
-          <a href={GOOGLE.url} target="_blank" rel="noopener noreferrer">
-            {GOOGLE.total} avaliações
-          </a>{" "}
-          no Google
-        </span>
+        <span className="so-largo">Nota {GOOGLE.notaTexto} em {link} no Google</span>
+        <span className="so-estreito">{GOOGLE.notaTexto} · {link}</span>
       </p>
       <a className="insta" href={SITE.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label={`Instagram @${SITE.instagram}`}>
         <IconeInstagram />

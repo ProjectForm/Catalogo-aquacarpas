@@ -56,8 +56,13 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
 - **Primeira tela e confiança**: título "Aquacarpas / Catálogo" em serifa leve, nota do Google (estrelas em cinza claro,
   "Nota 4,8 em 26 avaliações", com link), `@aquacarpas` com ícone do Instagram e três pilares (entrega, pagamento, garantia). A
   nota e o total de avaliações são **digitados à mão** em `GOOGLE` (`src/lib/config.ts`): atualize quando mudarem no Google
-  (e, se houver o link curto de avaliações do Perfil da Empresa, troque `GOOGLE.url`). A carpa que nada ao rolar é o componente
-  `NadoCarpa` (parada com "reduzir movimento"). No resumo do pedido, `ConfiancaPedido` mostra "pagamento confiável pela
+  (e, se houver o link curto de avaliações do Perfil da Empresa, troque `GOOGLE.url`). No celular a primeira tela é curta de
+  propósito (nota e Instagram na mesma linha, pilares lado a lado como uma barra, sem botão e sem a foto de destaque) para a
+  ponta da grade de produtos aparecer sem rolar; a foto de destaque continua só no computador. A carpa vista de cima é o
+  componente `NadoCarpa`: não ocupa espaço, sai de baixo das abas e nada para baixo pela grade enquanto a página rola (não
+  aparece com "reduzir movimento"). **Grade**: 2 itens por linha no celular (até 560 px). **Quantidade**: depois de tocar em
+  "Adicionar", o botão do card (e o da página do peixe) vira `- número +` (o número aceita digitação; no mínimo, o "-" tira o
+  item); exemplar único não tem quantidade. No resumo do pedido, `ConfiancaPedido` mostra "pagamento confiável pela
   InfinitePay" (ou, se o CEP já foi calculado e não há pagamento online, "combinado com a nossa equipe") e a garantia
   (`GARANTIA_CURTA`: reposição ou reembolso, sem prometer prazo).
 - **Preços do reajuste** (+10% no mais caro a +16,7% no mais barato, escala logarítmica): os valores de antes ficam em

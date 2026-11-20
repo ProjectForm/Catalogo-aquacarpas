@@ -109,7 +109,6 @@ p { margin: 0; }
 
 .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 22px; }
 .grade.grande { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-@media (max-width: 420px) { .grade, .grade.grande { grid-template-columns: minmax(0, 1fr); } }
 
 .cartao { display: flex; flex-direction: column; background: var(--bg-2); border: 1px solid var(--linha); border-radius: var(--raio); overflow: hidden; transition: border-color .2s; }
 .cartao:hover { border-color: var(--linha-forte); }
@@ -307,8 +306,8 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
    Título em serifa leve, subtítulo pequeno com espaçamento, nota do Google, Instagram e três pilares de confiança.
    ==================================================================================================================== */
 :root {
-  --estrela: #d9d6cf;
-  --estrela-vazia: rgba(242, 234, 214, 0.16);
+  --estrela: #dcc088;
+  --estrela-vazia: rgba(220, 192, 136, 0.2);
 }
 
 .hero-suave { position: relative; overflow: hidden; isolation: isolate; padding: clamp(34px, 6vw, 76px) 0 clamp(26px, 4vw, 48px); }
@@ -325,9 +324,10 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 .hero-suave h1 .t-cat::before { content: ""; display: inline-block; width: 0.8em; height: 1px; background: currentColor; opacity: 0.5; vertical-align: 0.3em; margin-right: 0.3em; }
 .hero-suave .subtitulo { margin-top: 20px; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: var(--suave); }
 
-/* nota do Google e Instagram */
-.prova { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; margin-top: 22px; font-size: 0.86rem; color: var(--suave); }
-.avaliacao { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* nota do Google e Instagram, lado a lado */
+.so-estreito { display: none; }
+.prova { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; margin-top: 22px; font-size: 0.86rem; color: var(--suave); }
+.avaliacao { display: inline-flex; align-items: center; gap: 10px; }
 .avaliacao a { color: var(--texto-forte); text-decoration: underline; text-decoration-color: rgba(242, 234, 214, 0.34); text-underline-offset: 3px; transition: text-decoration-color .15s; }
 .avaliacao a:hover { text-decoration-color: var(--texto-forte); }
 .estrelas { --e: 14px; --g: 3px; position: relative; display: inline-block; height: var(--e); flex: none; line-height: 0; }
@@ -340,17 +340,12 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 .insta:hover { color: var(--texto-forte); }
 .insta svg { width: 15px; height: 15px; flex: none; }
 
-/* três pilares: ícone de traço fino, título pequeno e uma linha de apoio */
-.pilares { list-style: none; margin: 32px 0 0; padding: 24px 0 0; border-top: 1px solid var(--linha); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+/* três pilares lado a lado, como uma barra: ícone de traço fino, título pequeno e (no computador) uma linha de apoio */
+.pilares { list-style: none; margin: 30px 0 0; padding: 22px 0 0; border-top: 1px solid var(--linha); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 22px; }
 .pilar { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .pilar svg { width: 21px; height: 21px; flex: none; color: var(--suave); }
 .pilar strong { display: block; font-size: 0.86rem; font-weight: 500; line-height: 1.35; color: var(--texto-forte); }
 .pilar span { display: block; margin-top: 3px; font-size: 0.8rem; line-height: 1.5; color: var(--suave); }
-@media (max-width: 560px) {
-  .pilares { grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 28px; }
-  .pilar { flex-direction: row; align-items: flex-start; gap: 14px; }
-  .pilar svg { margin-top: 1px; }
-}
 
 /* botões da primeira tela: uma pílula clara e um link discreto */
 .hero-suave .acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 26px; margin-top: 30px; }
@@ -363,18 +358,44 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
   .link-suave { display: inline-flex; align-items: center; min-height: 44px; padding-block: 0; }
 }
 
-/* carpa que nada enquanto a página rola (decorativa, só transform/opacidade) */
-.nado { position: relative; height: 70px; margin-inline: auto; max-width: 1180px; padding-inline: 20px; overflow: hidden; pointer-events: none; color: var(--texto); }
-.nado-peixe { position: absolute; left: 20px; top: 15px; width: 112px; height: 40px; opacity: 0; will-change: transform, opacity; }
-.nado-corpo { width: 100%; height: 100%; transition: transform .7s cubic-bezier(.4, 0, .2, 1); }
-.nado-corpo svg { display: block; width: 100%; height: 100%; overflow: visible; stroke: rgba(242, 234, 214, 0.78); }
-.nado svg path, .nado svg circle { vector-effect: non-scaling-stroke; }
-.nado .koi-mancha { stroke-opacity: 0.4; stroke-dasharray: 2 3; }
-.koi-cauda { transform-origin: 38px 27px; animation: koi-cauda 1.7s ease-in-out infinite alternate; }
-.koi-peitoral { transform-origin: 118px 34px; animation: koi-peitoral 2.4s ease-in-out infinite alternate; }
-@keyframes koi-cauda { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
-@keyframes koi-peitoral { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
-@media (max-width: 560px) { .nado { height: 58px; } .nado-peixe { width: 92px; height: 33px; top: 12px; } }
+/* Celular: primeira tela curta o bastante para a ponta da grade de produtos aparecer (sinal de que dá para rolar). */
+@media (max-width: 860px) { .hero-foto { display: none; } }
+@media (max-width: 560px) {
+  .so-largo { display: none !important; }
+  .so-estreito { display: inline; }
+  .insta { gap: 5px; }
+  .avaliacao { gap: 8px; }
+  .hero-suave { padding: 20px 0 10px; }
+  .hero-suave h1 { font-size: clamp(2.3rem, 10.4vw, 2.8rem); }
+  .hero-suave .subtitulo { margin-top: 12px; font-size: 0.66rem; letter-spacing: 0.22em; }
+  .hero-suave .acoes { display: none; }
+  .prova { margin-top: 12px; gap: 2px 12px; font-size: 0.8rem; }
+  .estrelas { --e: 12px; --g: 3px; }
+  .pilares { margin-top: 12px; padding-top: 12px; gap: 0; }
+  .pilar { align-items: center; text-align: center; gap: 7px; padding-inline: 6px; }
+  .pilar + .pilar { border-left: 1px solid var(--linha); }
+  .pilar svg { width: 19px; height: 19px; }
+  .pilar strong { font-size: 0.74rem; line-height: 1.3; }
+  .secao { padding-top: 24px; }
+  .secao-cab { margin-bottom: 14px; padding-bottom: 12px; }
+  .secao-cab h2 { font-size: 1.6rem; }
+  .secao-cab p { font-size: 0.82rem; }
+}
+
+/* Carpa vista de cima que nada para baixo, saindo de baixo das abas, enquanto a página rola (decorativa; ver NadoCarpa) */
+.nado { position: relative; height: 0; z-index: 4; pointer-events: none; }
+.nado-zona { position: absolute; left: 0; right: 0; top: 0; height: 1500px; overflow: hidden; }
+.nado-peixe { position: absolute; left: 0; top: 0; width: 34px; height: 73px; opacity: 0; color: var(--texto); will-change: transform, opacity; }
+.nado-peixe svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.nado-peixe path, .nado-peixe circle { vector-effect: non-scaling-stroke; }
+.nado-peixe .koi-mancha { stroke-opacity: 0.45; stroke-dasharray: 2 3; }
+.koi-cauda { transform-origin: 28px 40px; animation: koi-cauda 1.3s ease-in-out infinite alternate; }
+.koi-peitoral-d { transform-origin: 40px 100px; animation: koi-peitoral-d 2.2s ease-in-out infinite alternate; }
+.koi-peitoral-e { transform-origin: 16px 100px; animation: koi-peitoral-e 2.2s ease-in-out infinite alternate; }
+@keyframes koi-cauda { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+@keyframes koi-peitoral-d { from { transform: rotate(-6deg); } to { transform: rotate(7deg); } }
+@keyframes koi-peitoral-e { from { transform: rotate(6deg); } to { transform: rotate(-7deg); } }
+@media (max-width: 560px) { .nado-peixe { width: 29px; height: 62px; } }
 
 /* cupom discreto em cada item (só na campanha) */
 .cupom-item { font-size: 0.74rem; letter-spacing: 0.04em; color: var(--suave); }
@@ -445,3 +466,35 @@ a, button, summary, label { touch-action: manipulation; -webkit-tap-highlight-co
   .linha-item.sem-foto .valor { grid-column: auto; text-align: right; }
 }
 .campo .ajuda-ok { color: var(--verde); }
+
+/* ====================================================================================================================
+   Quantidade no card (depois de "Adicionar") e grade de 2 itens por linha no celular.
+   ==================================================================================================================== */
+.qtd-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: stretch; min-width: 148px; min-height: 46px; border: 1px solid rgba(232, 90, 44, 0.65); border-radius: var(--raio); background: var(--bg); overflow: hidden; }
+.qtd-card button { display: grid; place-items: center; background: none; border: 0; padding: 0; color: var(--texto-forte); font: 400 1.35rem/1 var(--sans); cursor: pointer; transition: background .15s; }
+.qtd-card button:hover { background: rgba(242, 234, 214, 0.08); }
+.qtd-card input { width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--texto-forte); text-align: center; font: 500 1rem var(--sans); -moz-appearance: textfield; }
+.qtd-card input:focus { outline: none; background: rgba(242, 234, 214, 0.07); }
+.acoes-produto .qtd-card { min-height: 52px; }
+
+@media (max-width: 560px) {
+  .grade, .grade.grande { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .grade.grande + .grade.grande { margin-top: 12px; }
+  .grade:not(.grande) .cartao .foto { aspect-ratio: 1 / 1; }
+  .cartao .corpo { padding: 12px 12px 14px; gap: 6px; }
+  .cartao h3 { font-size: 1.1rem; line-height: 1.16; }
+  .cartao h3 a { padding-block: 2px; }
+  .cartao .meta { font-size: 0.74rem; }
+  .cartao .rodape { flex-direction: column; align-items: stretch; gap: 10px; padding-top: 4px; }
+  .cartao .rodape .btn, .cartao .rodape .qtd-card { width: 100%; min-width: 0; }
+  .cartao .rodape .btn { min-height: 44px; padding-inline: 8px; font-size: 0.86rem; }
+  .cartao .rodape .qtd-card { min-height: 44px; }
+  .cartao .preco strong { font-size: 1.3rem; }
+  .cartao .preco s { font-size: 0.76rem; }
+  .cartao .preco small, .cartao .preco .un { font-size: 0.7rem; }
+  .cartao .preco.consulta { font-size: 0.8rem; line-height: 1.35; }
+  .cartao .selo { left: 8px; top: 8px; font-size: 0.6rem; padding: 4px 7px; }
+  .cupom-item { font-size: 0.68rem; line-height: 1.35; }
+  .cupom-item span { display: block; }
+  .cupom-item .cupom-sep { display: none; }
+}
