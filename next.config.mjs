@@ -9,6 +9,10 @@ const nextConfig = {
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
       {
+        source: "/carpa/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }], // arquivos versionados (nadando-v1.*)
+      },
+      {
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },

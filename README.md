@@ -58,7 +58,12 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
   nota e o total de avaliações são **digitados à mão** em `GOOGLE` (`src/lib/config.ts`): atualize quando mudarem no Google
   (e, se houver o link curto de avaliações do Perfil da Empresa, troque `GOOGLE.url`). No celular a primeira tela é curta de
   propósito (nota e Instagram na mesma linha, pilares lado a lado como uma barra, sem botão e sem a foto de destaque) para a
-  ponta da grade de produtos aparecer sem rolar; a foto de destaque continua só no computador. A carpa vista de cima é o
+  ponta da grade de produtos aparecer sem rolar; a foto de destaque continua só no computador. No espaço livre ao lado do
+  título nada a **carpa real do vídeo da Aquacarpas** (`CarpaNadando`, `public/carpa/nadando-v1.mp4` com ~90 KB e poster
+  WebP): só a carpa, sem a marca d'água nem os reflexos, em vai e volta (boomerangue) com desaceleração nas pontas. O fundo
+  do vídeo é quase preto e o CSS usa `mix-blend-mode: lighten`, por isso o hero **não pode ter `isolation: isolate`**. Toca só
+  quando está na tela e não toca com "reduzir movimento" (fica o poster). Como o arquivo foi feito (e como refazer com outro
+  vídeo) está em `scripts/carpa-video/LEIA-ME.md`. A carpa vista de cima é o
   componente `NadoCarpa`: não ocupa espaço, sai de baixo das abas e nada para baixo pela grade enquanto a página rola (não
   aparece com "reduzir movimento"). **Grade**: 2 itens por linha no celular (até 560 px). **Quantidade**: depois de tocar em
   "Adicionar", o botão do card (e o da página do peixe) vira `- número +` (o número aceita digitação; no mínimo, o "-" tira o

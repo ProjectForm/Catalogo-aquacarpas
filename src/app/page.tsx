@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CarpaNadando } from "@/components/CarpaNadando";
 import { CategoriaNav } from "@/components/CategoriaNav";
 import { NadoCarpa } from "@/components/NadoCarpa";
 import { NomeProduto } from "@/components/NomeProduto";
@@ -37,7 +38,8 @@ export default async function Home() {
       {bf ? <RevelarAoRolar /> : null}
       <section className="hero hero-suave">
         <div className="container hero-grid">
-          <div>
+          <div className="hero-texto">
+            <CarpaNadando />
             <h1>
               <span className="t-marca">{SITE.nome}</span>
               <span className="t-cat">Catálogo</span>
