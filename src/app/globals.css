@@ -334,6 +334,8 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 .orbita-giro { position: absolute; inset: 0; animation: orbita-volta 9s linear infinite; will-change: transform; }
 .orbita-peixe { position: absolute; left: 52%; top: 38.8%; width: 56%; height: auto; aspect-ratio: 256 / 102; transform: rotate(90deg); }
 @keyframes orbita-volta { to { transform: rotate(360deg); } }
+/* computador estreito (2 colunas): titulo menor para sobrar espaco a orbita sem encostar nele */
+@media (min-width: 861px) { .hero-suave { --h1: clamp(2.9rem, 6.6vw, 5.1rem); } }
 
 /* nota do Google e Instagram, lado a lado */
 .so-estreito { display: none; }
