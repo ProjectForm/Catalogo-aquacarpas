@@ -324,18 +324,12 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 .hero-suave h1 .t-cat::before { content: ""; display: inline-block; width: 0.8em; height: 1px; background: currentColor; opacity: 0.5; vertical-align: 0.3em; margin-right: 0.3em; }
 .hero-suave .subtitulo { margin-top: 20px; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: var(--suave); }
 
-/* Carpa real (recorte do video da Aquacarpas: so a carpa, sem marca d'agua nem reflexos) nadando em CIRCULOS no canto direito
-   do hero, longe do titulo. E uma imagem WebP animada com transparencia de verdade (sem caixa preta em nenhum aparelho).
-   Um quadrado (--S) guarda a orbita; o giro de 360 graus leva a carpa, que ja sai virada para a tangente do circulo.
-   Tudo em % do quadrado, entao o conjunto escala junto. A carpa mede 56% do quadrado e o raio da orbita 30%.
-   O quadrado e limitado em largura (nao encostar no titulo) e em altura (cabe entre o topo e o subtitulo: 0,824 x lado). */
+/* Carpa real (recorte do video da Aquacarpas: so a carpa, sem marca d'agua nem reflexos) cruzando o canto do topo, sozinha,
+   em curva: nasce embaixo da header, desce, faz a curva para a direita e sai pela borda. O trajeto, o tamanho e o tempo sao
+   montados por CarpaNadando.tsx (Web Animations); aqui so o elemento. E uma imagem WebP animada com transparencia de
+   verdade (sem caixa preta em nenhum aparelho). Comeca invisivel (opacity 0) ate o JavaScript montar a rota. */
 .hero-texto { position: relative; }
-.orbita { position: absolute; right: 0; top: calc(var(--h1) * 1.05 - 1px); width: clamp(100px, min(calc(100% - var(--h1) * 4.75 - 22px), calc(var(--h1) * 2.55 + 21px)), 168px); aspect-ratio: 1; transform: translateY(-50%); pointer-events: none; }
-.orbita-giro { position: absolute; inset: 0; animation: orbita-volta 9s linear infinite; will-change: transform; }
-.orbita-peixe { position: absolute; left: 52%; top: 38.8%; width: 56%; height: auto; aspect-ratio: 256 / 102; transform: rotate(90deg); }
-@keyframes orbita-volta { to { transform: rotate(360deg); } }
-/* computador estreito (2 colunas): titulo menor para sobrar espaco a orbita sem encostar nele */
-@media (min-width: 861px) { .hero-suave { --h1: clamp(2.9rem, 6.6vw, 5.1rem); } }
+.carpa-nada { position: absolute; left: 0; top: 0; width: 80px; height: auto; aspect-ratio: 256 / 102; opacity: 0; pointer-events: none; will-change: transform, opacity; }
 
 /* nota do Google e Instagram, lado a lado */
 .so-estreito { display: none; }

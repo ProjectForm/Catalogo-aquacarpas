@@ -59,13 +59,16 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
   (e, se houver o link curto de avaliações do Perfil da Empresa, troque `GOOGLE.url`). No celular a primeira tela é curta de
   propósito (nota e Instagram na mesma linha, pilares lado a lado como uma barra, sem botão e sem a foto de destaque) para a
   ponta da grade de produtos aparecer sem rolar; a foto de destaque continua só no computador. No canto direito do hero
-  nada em **círculos** a **carpa real do vídeo da Aquacarpas** (`CarpaNadando`): uma imagem WebP animada com
-  **transparência de verdade** (`public/carpa/orbita-v2.webp`, ~360 KB; só a carpa, sem marca d'água nem reflexos, em vai e
-  volta com desaceleração nas pontas) que o CSS (`.orbita`) faz girar com a cabeça na tangente. Não é vídeo de propósito:
-  vídeo com fundo preto + `mix-blend-mode` deixava uma caixa visível em alguns celulares (o preto do vídeo sai de outro tom
-  que o da página). Sem JavaScript, toca mesmo com economia de bateria; com "reduzir movimento" vira o quadro parado
-  (`orbita-parada-v2.webp`). O tamanho do quadrado da órbita é limitado em largura (não encosta no título) e em altura (cabe
-  entre o topo e o subtítulo). Como o arquivo foi feito (e como refazer com outro vídeo) está em `scripts/carpa-video/LEIA-ME.md`. A carpa vista de cima é o
+  cruza a **carpa real do vídeo da Aquacarpas** (`CarpaNadando`, imagem WebP animada com **transparência de verdade**,
+  `public/carpa/orbita-v2.webp`, ~360 KB; só a carpa, sem marca d'água nem reflexos, com vai e volta do nado): ela nasce
+  embaixo da header, desce nadando, faz a curva para a direita com a cabeça sempre virada para onde vai e sai pela borda
+  direita; some uns 3,5 s e volta a sair da header. **Tempo próprio, independente da rolagem** (a outra carpa, em traço fino,
+  é a que anda conforme se rola). A rota é uma curva de Bézier montada no navegador a partir do layout real (título,
+  subtítulo, nota e Instagram), escolhendo o caminho que não passa por cima de texto em qualquer largura; é tocada com a Web
+  Animations API (compositor) e só roda com o topo visível. No computador ela esmaece perto da foto de destaque. Não é vídeo
+  de propósito: vídeo com fundo preto + `mix-blend-mode` deixava uma caixa visível em alguns celulares. Com "reduzir
+  movimento" fica o quadro parado (`orbita-parada-v2.webp`). Como o arquivo foi feito (e como refazer com outro vídeo) está em
+  `scripts/carpa-video/LEIA-ME.md`. A carpa vista de cima é o
   componente `NadoCarpa`: não ocupa espaço, sai de baixo das abas e nada para baixo pela grade enquanto a página rola (não
   aparece com "reduzir movimento"). **Grade**: 2 itens por linha no celular (até 560 px). **Quantidade**: depois de tocar em
   "Adicionar", o botão do card (e o da página do peixe) vira `- número +` (o número aceita digitação; no mínimo, o "-" tira o
