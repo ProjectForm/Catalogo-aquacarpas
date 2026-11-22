@@ -9,7 +9,7 @@ import { TrackView } from "@/components/TrackView";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { buscarProduto, listarProdutos } from "@/lib/catalogo";
 import type { Produto } from "@/lib/catalogo";
-import { BLACK_FRIDAY, blackFridayAtiva, linkWhatsApp, POLITICAS, SITE, SITE_URL } from "@/lib/config";
+import { linkWhatsApp, POLITICAS, SITE, SITE_URL } from "@/lib/config";
 
 export const revalidate = 60;
 
@@ -93,11 +93,6 @@ export default async function ProdutoPage({ params }: Props) {
             <NomeProduto nome={p.nome} />
           </h1>
           <Preco p={p} />
-          {blackFridayAtiva() && p.status === "disponivel" && p.preco !== null ? (
-            <p className="cupom-item cupom-produto">
-              Cupom <b>{BLACK_FRIDAY.cupom}</b> · {BLACK_FRIDAY.percentual}% de desconto no pedido, até {BLACK_FRIDAY.fimTexto}
-            </p>
-          ) : null}
 
           {p.descricao ? <p className="descricao">{p.descricao}</p> : null}
 

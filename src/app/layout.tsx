@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Medicao } from "@/components/Medicao";
 import { Rastreio } from "@/components/Rastreio";
+import { Roleta } from "@/components/Roleta";
 import { WhatsAppFlutuante } from "@/components/WhatsAppFlutuante";
 import { SITE, SITE_URL } from "@/lib/config";
 import "./globals.css";
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CartBar />
           <WhatsAppFlutuante />
           <Rastreio />
+          <Roleta />
           <Medicao />
         </CartProvider>
         <Analytics />

@@ -38,6 +38,8 @@ interface CartCtx {
   totalFinal: number;
   aplicarCupom: (codigo: string) => Promise<{ ok: true } | { ok: false; mensagem: string }>;
   removerCupom: () => void;
+  /** Guarda um cupom ganho fora do carrinho (roleta) sem consultar o servidor agora; o desconto continua sendo calculado por ele. */
+  guardarCupom: (codigo: string) => void;
   adicionar: (p: Produto, qtd?: number) => void;
   definirQuantidade: (codigo: string, qtd: number) => void;
   remover: (codigo: string) => void;
@@ -175,6 +177,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setMensagemCupom(null);
   }, []);
 
+  // Guarda o código sem perguntar nada ao servidor (a roleta pode ser girada com o carrinho vazio). Quando houver itens, o
+  // efeito abaixo pede o cálculo ao servidor e, no pedido, o servidor confere o cupom de novo; se ele recusar, o código sai.
+  const guardarCupom = useCallback((codigo: string) => {
+    const cod = codigo.trim().toUpperCase();
+    if (/^[A-Z0-9-]{3,30}$/.test(cod)) setCupomCodigo(cod);
+  }, []);
+
   const limpar = useCallback(() => {
     setItens([]);
     removerCupom();
@@ -248,9 +257,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return {
       itens, pronto, quantidadeTotal, total, bf, cupomCodigo, cupom, verificandoCupom, mensagemCupom,
       totalFinal: cupom ? cupom.total_final : total,
-      aplicarCupom, removerCupom, adicionar, definirQuantidade, remover, limpar, temItem,
+      aplicarCupom, guardarCupom, removerCupom, adicionar, definirQuantidade, remover, limpar, temItem,
     };
-  }, [itens, pronto, bf, cupomCodigo, calculo, assinatura, verificandoCupom, mensagemCupom, aplicarCupom, removerCupom, adicionar, definirQuantidade, remover, limpar, temItem]);
+  }, [itens, pronto, bf, cupomCodigo, calculo, assinatura, verificandoCupom, mensagemCupom, aplicarCupom, guardarCupom, removerCupom, adicionar, definirQuantidade, remover, limpar, temItem]);
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }

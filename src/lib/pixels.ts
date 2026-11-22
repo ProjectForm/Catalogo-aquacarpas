@@ -55,29 +55,49 @@ let clarityPronto = false;
 let ultimoPath = "";
 let viewPendente: { codigo: string; valor?: number; nome?: string } | null = null;
 
+let metaIniciado = false;
+
+/**
+ * Coloca o código base do Pixel da Meta na página no modo oficial de consentimento: `consent revoke` ANTES do `init`.
+ * Assim o Pixel fica instalado (a Meta, o Pixel Helper e o "Verificar URL" do Gerenciador de Eventos o enxergam), mas travado:
+ * não grava cookie nem envia evento nenhum até o `consent grant`, que só acontece no "Aceitar". Quem recusa não carrega nada.
+ */
 function iniciarMeta(id: string) {
-  if (window.fbq) {
-    metaPronto = true;
-    return;
+  if (metaIniciado) return;
+  metaIniciado = true;
+  if (!window.fbq) {
+    const n: Fbq = function (...args: unknown[]) {
+      if (n.callMethod) n.callMethod(...args);
+      else (n.queue as unknown[]).push(args);
+    } as Fbq;
+    window.fbq = n;
+    if (!window._fbq) window._fbq = n;
+    n.push = n;
+    n.loaded = true;
+    n.version = "2.0";
+    n.queue = [];
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = "https://connect.facebook.net/en_US/fbevents.js";
+    document.head.appendChild(s);
   }
-  const n: Fbq = function (...args: unknown[]) {
-    if (n.callMethod) n.callMethod(...args);
-    else (n.queue as unknown[]).push(args);
-  } as Fbq;
-  window.fbq = n;
-  if (!window._fbq) window._fbq = n;
-  n.push = n;
-  n.loaded = true;
-  n.version = "2.0";
-  n.queue = [];
-  const s = document.createElement("script");
-  s.async = true;
-  s.src = "https://connect.facebook.net/en_US/fbevents.js";
-  document.head.appendChild(s);
+  window.fbq("consent", "revoke");
   // Sem eventos automáticos de botão/microdados: só os eventos que nós mandamos (nada de campo de formulário).
   window.fbq("set", "autoConfig", false, id);
   window.fbq("init", id);
-  metaPronto = true;
+}
+
+/**
+ * Instala o Pixel da Meta travado (sem consentimento ainda). Não faz nada se a pessoa já recusou ou se não há ID.
+ * Chamado em toda visita para o Pixel ser detectável; nenhum evento sai daqui.
+ */
+export function prepararMeta() {
+  if (!PIXELS.meta || lerEscolha() === "nao") return;
+  try {
+    iniciarMeta(PIXELS.meta);
+  } catch {
+    /* o rastreio nunca pode atrapalhar a compra */
+  }
 }
 
 function iniciarClarity(id: string, utm: Record<string, string>) {
@@ -104,7 +124,9 @@ export function carregarTerceiros(utm: Record<string, string>) {
   carregado = true;
   try {
     if (PIXELS.meta) {
-      iniciarMeta(PIXELS.meta);
+      iniciarMeta(PIXELS.meta); // não faz nada se o Pixel já foi instalado travado por prepararMeta()
+      window.fbq?.("consent", "grant"); // o "Aceitar" destrava: a partir daqui os eventos saem e o cookie da Meta é gravado
+      metaPronto = true;
       ultimoPath = location.pathname;
       window.fbq?.("track", "PageView");
       if (viewPendente) {
@@ -122,6 +144,7 @@ export function carregarTerceiros(utm: Record<string, string>) {
 export function descarregar() {
   carregado = false;
   metaPronto = false;
+  metaIniciado = false;
   clarityPronto = false;
 }
 

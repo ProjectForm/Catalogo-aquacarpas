@@ -21,7 +21,8 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
 ## Abas, WhatsApp e entrega por transportadora
 - **Abas**: cada linha de `catalogo_categorias` é uma aba fixa no topo do catálogo (ex.: "Nishikigoi Ultra Premium"), com a
   contagem de peixes. Para mover um peixe de aba, mude `catalogo.categoria` (slug). Menor `ordem` da categoria aparece antes.
-- **Botão flutuante do WhatsApp**: sempre visível no canto; leva direto para `wa.me/<número>` (número em `src/lib/config.ts`).
+- **Botão flutuante do WhatsApp**: círculo verde com a logo do WhatsApp (SVG preenchido em `WhatsAppFlutuante.tsx`), sempre visível no
+  canto; leva direto para `wa.me/<número>` (número em `src/lib/config.ts`).
 - **CEP sem entrega em casa**: o Juan informa as faixas; o Claude Code grava em `entrega_restricoes` (cep_inicio, cep_fim com
   8 dígitos, `ativo`, `observacao` opcional com o nome da transportadora). Exemplo:
   `insert into entrega_restricoes (cep_inicio, cep_fim, cidade, uf, observacao) values ('14000000','14099999','Ribeirão Preto','SP','Transportadora X');`
@@ -54,7 +55,9 @@ Três camadas, da mais simples para a mais pesada:
 2. **Pixel da Meta** e 3. **Microsoft Clarity** (gravações e mapas de calor anônimos): `src/lib/pixels.ts` + `src/components/Medicao.tsx`.
    **Só funcionam com ID** em `PIXELS` (`src/lib/config.ts`, ou variáveis `NEXT_PUBLIC_META_PIXEL_ID` / `NEXT_PUBLIC_CLARITY_ID` na
    Vercel) **e depois do "Aceitar"** da faixa de cookies (LGPD; `PIXELS.consentimentoObrigatorio`). Sem ID nada carrega e a faixa
-   não aparece. Eventos enviados à Meta: PageView, ViewContent, AddToCart, InitiateCheckout, Contact (WhatsApp), Lead (cadastro
+   não aparece. O **Pixel da Meta fica instalado e travado antes da escolha** (modo oficial de consentimento: `fbq('consent','revoke')`
+   antes do `init`, `grant` no "Aceitar"): sem cookie e sem evento, mas o Pixel Helper e o "Verificar URL" da Meta o enxergam; quem
+   recusa não carrega nada. O Clarity só carrega depois do "Aceitar". Eventos enviados à Meta: PageView, ViewContent, AddToCart, InitiateCheckout, Contact (WhatsApp), Lead (cadastro
    enviado) e Purchase (pagamento confirmado), sempre só com código do peixe e valores; `autoConfig` desligado (a Meta não lê campos
    do formulário). No Clarity, as telas `/entrega`, `/pagamento` e `/obrigado` têm o texto mascarado (`data-clarity-mask` em
    `<main>`, feito por `Rastreio`). A página `/privacidade` explica tudo e tem o botão para mudar a escolha de cookies.
@@ -71,11 +74,19 @@ Três camadas, da mais simples para a mais pesada:
   `update cupons set valido_ate = '2026-12-05 23:59:59-03' where codigo = 'BLACK30';`. Cupom novo: `insert into cupons`
   (código em maiúsculas, `percentual`, `valido_ate`). O visual e o campo do cupom no carrinho seguem a data `BLACK_FRIDAY.fim`
   em `src/lib/config.ts`: se mudar o prazo no banco, mude lá também.
-- **Visual da campanha** (subtítulo "Oferta especial Black Friday" na primeira tela, entrada suave dos cards, linha do cupom em
-  cada card e na página do peixe, aviso e campo do cupom no carrinho) é controlado só por `blackFridayAtiva()` em
-  `src/lib/config.ts` e **some sozinho** depois de `fim`: o layout se refaz a cada 60 s. Os textos da campanha ficam em
-  `BLACK_FRIDAY` (mesmo arquivo). A primeira tela é propositalmente silenciosa: o cupom **não** aparece nela, só nos itens e
-  no carrinho. Animações respeitam `prefers-reduced-motion` e não usam bibliotecas.
+- **Roleta de desconto** (`src/components/Roleta.tsx`, montada no layout): abre ~1 s depois que a pessoa entra no catálogo
+  (qualquer página, menos `/entrega`, `/pagamento`, `/obrigado` e `/privacidade`), uma vez por aparelho até ganhar
+  (`localStorage aq_roleta_v1`); quem fecha no X/Esc sem ganhar só a vê de novo na próxima visita (`sessionStorage
+  aq_roleta_fechada`). O resultado é sorteado entre **30% (cupom BLACK30)** e **"tente de novo"** (50% cada; depois de 2 "tente
+  de novo" seguidos o próximo giro é o prêmio). As fatias de 15%, 5% e "não ganhou nada" são **só desenho**: nunca saem. Ao
+  ganhar, o código é guardado no carrinho (`guardarCupom` em `CartProvider`) e o desconto continua sendo **calculado pelo
+  servidor** (nada mudou na `catalogo-api`). Eventos do rastreio próprio: `roleta` com `dados.acao` = aberta | giro (`resultado`
+  tente/ganhou e `valor` = nº do giro) | escolher | fechou. Sumir é automático depois de `BLACK_FRIDAY.fim`.
+- **Visual da campanha** (subtítulo "Oferta especial Black Friday" na primeira tela, entrada suave dos cards, roleta, aviso e
+  campo do cupom no carrinho) é controlado só por `blackFridayAtiva()` em `src/lib/config.ts` e **some sozinho** depois de
+  `fim`: o layout se refaz a cada 60 s. Os textos da campanha ficam em `BLACK_FRIDAY` (mesmo arquivo). A primeira tela e os
+  cards são propositalmente silenciosos: o cupom **não** aparece embaixo dos peixes nem na página do peixe, só na roleta e no
+  carrinho (`CupomCarrinho`, na tela `/entrega`). Animações respeitam `prefers-reduced-motion` e não usam bibliotecas.
 - **Primeira tela e confiança**: título "Aquacarpas / Catálogo" em serifa leve, nota do Google (estrelas em cinza claro,
   "Nota 4,8 em 26 avaliações", com link), `@aquacarpas` com ícone do Instagram e três pilares (entrega, pagamento, garantia). A
   nota e o total de avaliações são **digitados à mão** em `GOOGLE` (`src/lib/config.ts`): atualize quando mudarem no Google

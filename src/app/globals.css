@@ -96,10 +96,11 @@ p { margin: 0; }
 .qtd-aba { opacity: 0.6; font-size: 0.78rem; margin-left: 4px; }
 
 /* ---------- botão flutuante do WhatsApp ---------- */
-.whats-flutuante { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 45; display: inline-flex; align-items: center; gap: 10px; background: #25d366; color: #0e0e0e; font: 600 0.92rem var(--sans); padding: 13px 20px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); transition: transform .15s, box-shadow .15s; }
-.whats-flutuante:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55); }
+.whats-flutuante { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 45; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #25d366; color: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.1); transition: transform .15s, box-shadow .15s, background .15s; }
+.whats-flutuante svg { display: block; width: 30px; height: 30px; }
+.whats-flutuante:hover { transform: translateY(-2px); background: #2be172; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.whats-flutuante:active { transform: scale(0.96); }
 .whats-flutuante.acima-barra { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
-@media (max-width: 640px) { .whats-flutuante { padding: 14px; } .whats-flutuante span { display: none; } }
 
 /* ---------- seções e cards ---------- */
 .secao { padding: clamp(48px, 7vw, 88px) 0 8px; scroll-margin-top: 130px; }
@@ -404,11 +405,6 @@ body:has(.barra-pedido) .rodape-site { padding-bottom: 90px; }
 @keyframes koi-peitoral-e { from { transform: rotate(6deg); } to { transform: rotate(-7deg); } }
 @media (max-width: 560px) { .nado-peixe { width: 29px; height: 62px; } }
 
-/* cupom discreto em cada item (só na campanha) */
-.cupom-item { font-size: 0.74rem; letter-spacing: 0.04em; color: var(--suave); }
-.cupom-item b { font-weight: 500; letter-spacing: 0.12em; color: var(--texto-forte); }
-.cupom-produto { margin-top: 14px; font-size: 0.82rem; }
-
 /* selos no resumo do pedido: pagamento pela InfinitePay e garantia */
 .selos-pedido { list-style: none; margin: 18px 0 0; padding: 16px 0 0; border-top: 1px solid var(--linha); display: grid; gap: 14px; }
 .selos-pedido li { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
@@ -501,9 +497,6 @@ a, button, summary, label { touch-action: manipulation; -webkit-tap-highlight-co
   .cartao .preco small, .cartao .preco .un { font-size: 0.7rem; }
   .cartao .preco.consulta { font-size: 0.8rem; line-height: 1.35; }
   .cartao .selo { left: 8px; top: 8px; font-size: 0.6rem; padding: 4px 7px; }
-  .cupom-item { font-size: 0.68rem; line-height: 1.35; }
-  .cupom-item span { display: block; }
-  .cupom-item .cupom-sep { display: none; }
 }
 
 /* ====================================================================================================================
@@ -521,3 +514,34 @@ a, button, summary, label { touch-action: manipulation; -webkit-tap-highlight-co
 .texto-legal p, .texto-legal li { margin-top: 12px; color: var(--suave); max-width: 70ch; }
 .texto-legal li strong { color: var(--texto-forte); font-weight: 600; }
 .texto-legal ul { padding-left: 20px; }
+
+/* ====================================================================================================================
+   Roleta de desconto da Black Friday (abre quando a pessoa entra; ver components/Roleta.tsx).
+   ==================================================================================================================== */
+.roleta-fundo { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(6px); overscroll-behavior: contain; animation: roleta-fundo .25s ease both; }
+.roleta { position: relative; width: min(380px, 100%); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; background: var(--bg-2); border: 1px solid var(--linha-forte); border-radius: 8px; padding: 26px 22px 22px; text-align: center; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); animation: roleta-entra .4s cubic-bezier(.2, .8, .2, 1) both; }
+.roleta h2 { margin-top: 8px; min-height: 2.16em; display: grid; align-items: center; font-size: clamp(1.5rem, 6.6vw, 1.9rem); line-height: 1.08; padding-inline: 14px; }
+.roleta-x { position: absolute; top: 6px; right: 6px; width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 0; border-radius: 50%; color: var(--suave); cursor: pointer; transition: color .15s, background .15s; }
+.roleta-x:hover { color: var(--texto-forte); background: rgba(242, 234, 214, 0.08); }
+.roleta-palco { position: relative; width: min(74vw, 40vh, 292px); width: min(74vw, 40dvh, 292px); aspect-ratio: 1; margin: 26px auto 18px; }
+.roleta-disco { width: 100%; height: 100%; transition-property: transform; transition-timing-function: cubic-bezier(.1, .6, .1, 1); will-change: transform; }
+.roleta-disco svg { display: block; width: 100%; height: 100%; }
+.roleta-ponteiro { position: absolute; left: 50%; top: -17px; width: 30px; transform: translateX(-50%); z-index: 2; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55)); }
+.roleta-miolo { position: absolute; left: 50%; top: 50%; width: 17%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: var(--bg); border: 3px solid #dcc088; box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.3); }
+.rf { stroke: #0e0e0e; stroke-width: 1.5; }
+.rf-premio30 { fill: #dcc088; }
+.rf-premio { fill: #f2ead6; }
+.rf-tente, .rf-nada { fill: #1d1d1d; }
+.rt { font-family: var(--sans); }
+.rt-a { font-size: 19px; font-weight: 700; }
+.rt-b { font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.rt-premio30 .rt-a { font-size: 25px; }
+.rt-premio30, .rt-premio { fill: #0e0e0e; }
+.rt-tente, .rt-nada { fill: rgba(242, 234, 214, 0.8); }
+.rt-tente .rt-a, .rt-nada .rt-a { font-size: 13.5px; font-weight: 600; }
+.rt-tente .rt-b, .rt-nada .rt-b { font-size: 9.5px; }
+.roleta-msg { min-height: 3em; display: grid; align-items: center; margin-bottom: 14px; font-size: 0.92rem; line-height: 1.5; color: var(--suave); }
+html[data-roleta="aberta"] .cookies { display: none; }
+@keyframes roleta-fundo { from { opacity: 0; } to { opacity: 1; } }
+@keyframes roleta-entra { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .roleta-fundo, .roleta { animation: none; } }

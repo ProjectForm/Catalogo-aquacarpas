@@ -43,7 +43,14 @@ export default function PrivacidadePage() {
         <h2>Cookies e pixels de terceiros (só se você aceitar)</h2>
         {medicao ? (
           <>
-            <p>Se você tocar em &quot;Aceitar&quot; na faixa de cookies, carregamos:</p>
+            {PIXELS.meta ? (
+              <p>
+                Antes da sua escolha, o código do Pixel da Meta fica na página travado: ele não grava cookies e não envia nenhum
+                evento sobre a sua visita. Como o arquivo do Pixel vem dos servidores da Meta, o seu navegador o baixa de lá e a
+                Meta recebe o seu endereço de IP nessa busca.
+              </p>
+            ) : null}
+            <p>Se você tocar em &quot;Aceitar&quot; na faixa de cookies, liberamos:</p>
             <ul>
               {PIXELS.meta ? (
                 <li>

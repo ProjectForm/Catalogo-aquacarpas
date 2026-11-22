@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PIXELS } from "@/lib/config";
-import { carregarTerceiros, gravarEscolha, lerEscolha, podeCarregar, terceirosConfigurados } from "@/lib/pixels";
+import { carregarTerceiros, gravarEscolha, lerEscolha, podeCarregar, prepararMeta, terceirosConfigurados } from "@/lib/pixels";
 import { capturarUtm, utmAtual } from "@/lib/tracking";
 
 /**
- * Pixel da Meta e Microsoft Clarity. Sem ID em config.ts (PIXELS) não faz nada e nenhuma faixa aparece. Com ID, só carrega
- * depois do "Aceitar" da faixa de cookies (LGPD: cookies de marketing/medição de terceiros pedem consentimento). Quem já
- * escolheu não vê a faixa de novo; a página /privacidade tem o botão para mudar de ideia.
+ * Pixel da Meta e Microsoft Clarity. Sem ID em config.ts (PIXELS) não faz nada e nenhuma faixa aparece. Com ID, o Pixel da
+ * Meta fica instalado mas travado (modo de consentimento da Meta: sem cookie e sem evento) e só destrava, junto com o Clarity,
+ * depois do "Aceitar" da faixa de cookies (LGPD: cookies de marketing/medição de terceiros pedem consentimento). Quem recusa
+ * não carrega nada. Quem já escolheu não vê a faixa de novo; a página /privacidade tem o botão para mudar de ideia.
  */
 export function Medicao() {
   const [aberto, setAberto] = useState(false);
@@ -19,7 +20,11 @@ export function Medicao() {
     const utm = capturarUtm();
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (podeCarregar()) carregarTerceiros(utm);
-    else if (PIXELS.consentimentoObrigatorio && lerEscolha() === null) timer = setTimeout(() => setAberto(true), 1400);
+    else {
+      // Pixel da Meta instalado e travado (sem cookie e sem evento) até o "Aceitar": é o que o torna detectável pela Meta.
+      prepararMeta();
+      if (PIXELS.consentimentoObrigatorio && lerEscolha() === null) timer = setTimeout(() => setAberto(true), 1400);
+    }
     const reabrir = () => setAberto(true);
     window.addEventListener("aq:cookies", reabrir);
     return () => {
