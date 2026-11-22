@@ -50,7 +50,7 @@ function IconeInstagram() {
  */
 export function ProvaSocial() {
   const link = (
-    <a href={GOOGLE.url} target="_blank" rel="noopener noreferrer">
+    <a href={GOOGLE.url} target="_blank" rel="noopener noreferrer" data-rastro="avaliacoes">
       {GOOGLE.total} avaliações
     </a>
   );
@@ -61,7 +61,7 @@ export function ProvaSocial() {
         <span className="so-largo">Nota {GOOGLE.notaTexto} em {link} no Google</span>
         <span className="so-estreito">{GOOGLE.notaTexto} · {link}</span>
       </p>
-      <a className="insta" href={SITE.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label={`Instagram @${SITE.instagram}`}>
+      <a className="insta" href={SITE.instagramUrl} target="_blank" rel="noopener noreferrer" data-rastro="instagram" aria-label={`Instagram @${SITE.instagram}`}>
         <IconeInstagram />
         <span>@{SITE.instagram}</span>
       </a>

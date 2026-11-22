@@ -40,8 +40,8 @@ export function Footer() {
           </div>
         </div>
         <p className="legal">
-          {SITE.nome} · CNPJ {SITE.cnpj}. Seus dados são usados apenas para entrega, emissão de nota fiscal e contato sobre o seu
-          pedido.
+          {SITE.nome} · CNPJ {SITE.cnpj}. Os dados do seu cadastro são usados para entrega, emissão de nota fiscal e contato sobre o seu
+          pedido. <Link href="/privacidade">Privacidade e cookies</Link>.
         </p>
       </div>
     </footer>

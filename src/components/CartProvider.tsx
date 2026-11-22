@@ -158,7 +158,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     });
-    evento("add_pedido", p.codigo);
+    evento("add_pedido", p.codigo, { valor: p.preco_promocional !== null && p.promo_qtd_minima <= 1 ? p.preco_promocional : (p.preco ?? undefined), nome: p.nome });
   }, []);
 
   const definirQuantidade = useCallback((codigo: string, qtd: number) => {

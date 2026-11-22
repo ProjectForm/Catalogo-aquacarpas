@@ -7,6 +7,7 @@ import { avisarPagamento, iniciarPagamento, statusPedido } from "@/lib/checkout"
 import type { StatusPedido } from "@/lib/checkout";
 import { linkWhatsApp } from "@/lib/config";
 import { brl } from "@/lib/format";
+import { evento } from "@/lib/tracking";
 import { ConfiancaPedido } from "./ConfiancaPedido";
 
 const hora = (iso: string) =>
@@ -88,6 +89,7 @@ export function PagamentoClient() {
   }, [pedido, carregar]);
 
   async function copiar(texto: string) {
+    evento("pagamento_acao", undefined, { dados: { acao: "pix_copiado" } });
     try {
       await navigator.clipboard.writeText(texto);
     } catch {
@@ -100,6 +102,7 @@ export function PagamentoClient() {
   }
 
   async function pagarInfinitePay() {
+    evento("pagamento_acao", undefined, { dados: { acao: "infinitepay" } });
     setAbrindo("infinitepay");
     setMensagem(null);
     const r = await iniciarPagamento(n, t, "infinitepay");
@@ -112,6 +115,7 @@ export function PagamentoClient() {
   }
 
   async function jaPaguei() {
+    evento("pagamento_acao", undefined, { dados: { acao: "ja_paguei" } });
     setAbrindo("aviso");
     const r = await avisarPagamento(n, t);
     setAbrindo(null);

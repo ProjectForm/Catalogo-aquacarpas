@@ -80,7 +80,7 @@ export default async function ProdutoPage({ params }: Props) {
 
   return (
     <div className="container">
-      <TrackView produto={p.codigo} />
+      <TrackView produto={p.codigo} preco={p.preco_promocional !== null && p.promo_qtd_minima <= 1 ? p.preco_promocional : p.preco} nome={p.nome} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <p className="migalha">
         <Link href="/">Catálogo</Link> / {p.nome}

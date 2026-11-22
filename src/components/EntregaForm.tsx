@@ -49,6 +49,7 @@ export function EntregaForm() {
   const [erro, setErro] = useState<string | null>(null);
   const [buscandoCep, setBuscandoCep] = useState(false);
   const iniciou = useRef(false);
+  const cepSinalizado = useRef("");
 
   const [restricoes, setRestricoes] = useState<Restricao[]>([]);
 
@@ -84,6 +85,10 @@ export function EntregaForm() {
     }
     let cancelado = false;
     setCalculandoFrete(true);
+    if (cepDigitos.length === 8 && cepSinalizado.current !== cepDigitos) {
+      cepSinalizado.current = cepDigitos;
+      evento("cep_ok"); // só o fato de o CEP ter sido digitado, nunca o CEP
+    }
     const t = setTimeout(async () => {
       const r = await consultarFrete({
         itens: itens.map((i) => ({ codigo: i.codigo, quantidade: i.quantidade })),
@@ -95,6 +100,19 @@ export function EntregaForm() {
       });
       if (cancelado) return;
       setCalculandoFrete(false);
+      // Resultado do frete para o funil (onde as pessoas esbarram: fora da área, abaixo do mínimo, só pelo WhatsApp...).
+      const resultado = !r.ok
+        ? "erro"
+        : r.dados.online.disponivel
+        ? "online"
+        : r.dados.destino?.situacao === "fora"
+        ? "fora_area"
+        : r.dados.abaixo_minimo
+        ? "abaixo_minimo"
+        : r.dados.destino?.situacao === "polo"
+        ? "retirada_polo"
+        : "whatsapp";
+      evento("frete_calculado", undefined, { dados: { resultado } });
       setOrc(r.ok ? r.dados : null);
       setOrcChave(r.ok ? chaveOrc : null);
     }, 450);
@@ -118,7 +136,7 @@ export function EntregaForm() {
   function primeiroFoco() {
     if (iniciou.current) return;
     iniciou.current = true;
-    evento("iniciou_cadastro");
+    evento("iniciou_cadastro", undefined, { valor: total > 0 ? total : undefined });
   }
 
   async function buscarCep(valor: string) {
@@ -222,7 +240,7 @@ export function EntregaForm() {
 
   return (
     <div className="duas-colunas" id="cadastro">
-      <form className="form" onSubmit={enviar} onFocus={primeiroFoco} noValidate={false}>
+      <form className="form" onSubmit={enviar} onFocus={primeiroFoco} noValidate={false} data-rastro-form>
         <div className="honey" aria-hidden="true">
           <label>
             Não preencha este campo

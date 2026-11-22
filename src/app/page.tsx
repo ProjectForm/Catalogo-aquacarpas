@@ -48,12 +48,12 @@ export default async function Home() {
             <ProvaSocial />
             <Pilares />
             <div className="acoes">
-              <a href="#catalogo" className="btn btn-claro">Ver o catálogo</a>
-              <Link href="/entrega" className="link-suave">Como funciona a entrega</Link>
+              <a href="#catalogo" className="btn btn-claro" data-rastro="hero_cta">Ver o catálogo</a>
+              <Link href="/entrega" className="link-suave" data-rastro="hero_entrega">Como funciona a entrega</Link>
             </div>
           </div>
           {destaque ? (
-            <Link href={`/p/${destaque.slug}`} className="hero-foto" aria-label={`Ver ${destaque.nome}`}>
+            <Link href={`/p/${destaque.slug}`} className="hero-foto" aria-label={`Ver ${destaque.nome}`} data-rastro="hero_foto" data-codigo={destaque.codigo}>
               <div className="img">
                 <img src={destaque.imagens[0]} alt={destaque.nome} decoding="async" />
               </div>

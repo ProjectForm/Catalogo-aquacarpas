@@ -38,6 +38,29 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
      secret `WHATSAPP_ATENDIMENTO` (padrão `5517981516665`).
   Para parar o aviso: mande `Stop` ao CallMeBot pelo WhatsApp ou apague o secret `CALLMEBOT_APIKEY`.
 
+## Medição (comportamento, anúncios e funil)
+
+Três camadas, da mais simples para a mais pesada:
+
+1. **Rastreio próprio e anônimo (sempre ligado, sem cookie, sem dado pessoal)**: `src/lib/tracking.ts`, `src/components/Rastreio.tsx` e a
+   Edge Function `catalogo-eventos` (cópia em `supabase/functions/catalogo-eventos/`, **separada** da `catalogo-api` de propósito)
+   gravam na tabela `eventos_site` (coluna `dados` jsonb): página, produto visto, adicionou ao pedido, cadastro iniciado, clique no
+   WhatsApp **e também** profundidade de rolagem (`scroll`: 25/50/75/100), abas da home que apareceram (`secao_vista`), cliques
+   (`clique`: card, aba, botões do topo, nota do Google, Instagram), tempo visível e rolagem máxima por página (`saiu`), primeiro foco
+   em cada campo do cadastro (`campo`: só o NOME do campo), CEP digitado (`cep_ok`), resultado do frete (`frete_calculado`:
+   online, whatsapp, fora_area, abaixo_minimo...), ações de pagamento (`pagamento_acao`) e `compra_confirmada`. O servidor só aceita uma
+   lista fechada de chaves em `dados`. Eventos vão em lote (a cada ~1,5 s ou ao sair da página). Consulte com SQL no Supabase
+   (tabela `eventos_site`; agrupe por `sessao` e `tipo`; `utm->>'medium' = 'paid'` separa o tráfego do anúncio).
+2. **Pixel da Meta** e 3. **Microsoft Clarity** (gravações e mapas de calor anônimos): `src/lib/pixels.ts` + `src/components/Medicao.tsx`.
+   **Só funcionam com ID** em `PIXELS` (`src/lib/config.ts`, ou variáveis `NEXT_PUBLIC_META_PIXEL_ID` / `NEXT_PUBLIC_CLARITY_ID` na
+   Vercel) **e depois do "Aceitar"** da faixa de cookies (LGPD; `PIXELS.consentimentoObrigatorio`). Sem ID nada carrega e a faixa
+   não aparece. Eventos enviados à Meta: PageView, ViewContent, AddToCart, InitiateCheckout, Contact (WhatsApp), Lead (cadastro
+   enviado) e Purchase (pagamento confirmado), sempre só com código do peixe e valores; `autoConfig` desligado (a Meta não lê campos
+   do formulário). No Clarity, as telas `/entrega`, `/pagamento` e `/obrigado` têm o texto mascarado (`data-clarity-mask` em
+   `<main>`, feito por `Rastreio`). A página `/privacidade` explica tudo e tem o botão para mudar a escolha de cookies.
+   Ligar: criar o Pixel (Gerenciador de Eventos) e o projeto no Clarity, colar os IDs e publicar; **desligue "correspondência
+   avançada automática" do Pixel** no Gerenciador de Eventos (o cadastro tem CPF e telefone).
+
 ## Black Friday 2026 e cupons
 - **Cupom BLACK30**: 30% sobre o total do pedido (já com a promoção por item, quando houver), em qualquer carpa do site,
   até **30/11/2026 23:59:59 (Brasília)**. Fonte da verdade no **servidor**: tabela `cupons` (RLS ligada, sem política pública,

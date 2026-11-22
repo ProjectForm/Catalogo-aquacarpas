@@ -9,6 +9,22 @@ const producao = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 export const SITE_URL = (producao ? `https://${producao}` : (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000")).replace(/\/$/, "");
 
 export const API_URL = `${SUPABASE_URL}/functions/v1/catalogo-api`;
+/** Função só dos eventos de navegação (rastreio próprio e anônimo); separada da API de pedidos de propósito. */
+export const EVENTOS_URL = `${SUPABASE_URL}/functions/v1/catalogo-eventos`;
+
+/**
+ * Medição de terceiros (anúncios e comportamento). Os IDs são públicos (aparecem no código de qualquer site que usa essas
+ * ferramentas), então podem ficar aqui ou em variáveis da Vercel (NEXT_PUBLIC_META_PIXEL_ID / NEXT_PUBLIC_CLARITY_ID).
+ * Vazio = desligado: nada é carregado e nenhuma faixa de cookies aparece.
+ *  - meta: ID do Pixel da Meta (Gerenciador de Eventos > Fontes de dados > Pixel), só números.
+ *  - clarity: ID do projeto no Microsoft Clarity (clarity.microsoft.com > Settings > Overview).
+ * Com `consentimentoObrigatorio` ligado, os dois só carregam depois que a pessoa toca em "Aceitar" na faixa de cookies (LGPD).
+ */
+export const PIXELS = {
+  meta: process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "",
+  clarity: process.env.NEXT_PUBLIC_CLARITY_ID ?? "",
+  consentimentoObrigatorio: true,
+};
 
 /**
  * Campanha Black Friday 2026. TUDO que é visual (faixa, hero, contagem, animações, aviso e campo de cupom no carrinho)

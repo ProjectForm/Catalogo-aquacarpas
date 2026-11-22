@@ -7,6 +7,8 @@ import { conferirPagamento, statusPedido } from "@/lib/checkout";
 import type { StatusPedido } from "@/lib/checkout";
 import { linkWhatsApp } from "@/lib/config";
 import { brl } from "@/lib/format";
+import { registrarCompra } from "@/lib/pixels";
+import { evento } from "@/lib/tracking";
 
 /**
  * /obrigado para pedidos pagos no site. Quando a pessoa volta da InfinitePay, o endereço traz transaction_nsu e slug:
@@ -46,6 +48,13 @@ export function ObrigadoOnline({ n, t }: { n: number; t: string }) {
       if (timer) clearTimeout(timer);
     };
   }, [n, t, params]);
+
+  // Pagamento confirmado: "Purchase" na Meta e evento próprio, uma vez por pedido (só o número e o valor, nada pessoal).
+  const pedidoPago = Boolean(pedido?.pago);
+  const valorPago = pedido?.total_pagar ?? 0;
+  useEffect(() => {
+    if (pedidoPago && valorPago > 0 && registrarCompra(n, valorPago)) evento("compra_confirmada", undefined, { valor: valorPago });
+  }, [pedidoPago, valorPago, n]);
 
   const ajuda = linkWhatsApp(`Olá! Sobre o pedido nº ${n} do catálogo da Aquacarpas.`);
 

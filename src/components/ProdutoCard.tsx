@@ -20,7 +20,7 @@ export function ProdutoCard({ produto: p, formato }: { produto: Produto; formato
   const linhaMeta = meta(p);
 
   return (
-    <article className={`cartao${indisponivel ? " indisponivel" : ""}`} data-foto={formato}>
+    <article className={`cartao${indisponivel ? " indisponivel" : ""}`} data-foto={formato} data-codigo={p.codigo}>
       <Link href={`/p/${p.slug}`} className="foto" aria-label={`Ver ${p.nome}`}>
         {p.imagens[0] ? <img src={p.imagens[0]} alt={p.nome} loading="lazy" decoding="async" /> : null}
         {selo ? <span className="selo">{selo}</span> : null}

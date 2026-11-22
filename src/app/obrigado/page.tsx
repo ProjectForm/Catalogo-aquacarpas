@@ -7,6 +7,7 @@ import { ObrigadoOnline } from "@/components/ObrigadoOnline";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { ABRIR_WHATSAPP_AUTOMATICO, SITE } from "@/lib/config";
 import { brl } from "@/lib/format";
+import { registrarLead } from "@/lib/pixels";
 import { evento } from "@/lib/tracking";
 
 interface Ultimo {
@@ -53,6 +54,11 @@ function ConteudoWhatsApp() {
       /* sem storage: mostramos a versão genérica */
     }
   }, []);
+
+  // Cadastro/pedido enviado: "Lead" na Meta (uma vez por número; só o valor, nada pessoal).
+  useEffect(() => {
+    if (u) registrarLead(u.numero, u.total_pagar ?? u.total);
+  }, [u]);
 
   // Abre o WhatsApp da Aquacarpas com os dados do cliente já escritos. O cliente só toca em enviar.
   // Abre uma vez por pedido (se ele voltar para esta página, não redireciona de novo).
