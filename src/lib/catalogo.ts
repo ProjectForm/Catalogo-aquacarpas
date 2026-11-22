@@ -1,4 +1,4 @@
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./config";
+import { BLACK_FRIDAY, SUPABASE_ANON_KEY, SUPABASE_URL } from "./config";
 
 export type StatusItem = "disponivel" | "reservado" | "vendido" | "sob_consulta";
 
@@ -131,7 +131,11 @@ export const precoSoNaPagina = (p: Pick<Produto, "tipo">) => p.tipo === "exempla
  * como 1 caixa por unidade (frete.ts, `milesimosDeVolume(null)`), que é exatamente o que um kit ocupa.
  */
 export interface KitInfo {
-  /** Composição quando o nome não basta (ex.: kit variedade). */
+  /** Total de peixes do kit (vira a legenda "15 koi" na foto e "15 peixes" sob o nome). */
+  quantidade: number | null;
+  /** Tamanho dos peixes quando é um só (ex.: "10 a 12 cm"); kits mistos usam `composicao`. */
+  tamanho: string | null;
+  /** Composição dos kits mistos (ex.: "2 de 21 cm"). */
   composicao: string[];
   /** Brinde que acompanha o kit, sem preço (ex.: "2 kg de ração 46% de proteína"). */
   brinde: string | null;
@@ -143,5 +147,19 @@ export function kitDe(p: Pick<Produto, "ficha">): KitInfo | null {
   const o = k as Record<string, unknown>;
   const composicao = Array.isArray(o.composicao) ? o.composicao.filter((x): x is string => typeof x === "string" && x.trim() !== "") : [];
   const brinde = typeof o.brinde === "string" && o.brinde.trim() ? o.brinde.trim() : null;
-  return { composicao, brinde };
+  const quantidade = typeof o.quantidade === "number" && Number.isFinite(o.quantidade) && o.quantidade > 0 ? Math.floor(o.quantidade) : null;
+  const tamanho = typeof o.tamanho === "string" && o.tamanho.trim() ? o.tamanho.trim() : null;
+  return { quantidade, tamanho, composicao, brinde };
+}
+
+/** "15 peixes" / "1 peixe". */
+export const rotuloPeixes = (n: number) => `${n} ${n === 1 ? "peixe" : "peixes"}`;
+
+/**
+ * Valor com o cupom da campanha, só para MOSTRAR no kit ("Preço com cupom: ..."). Mesma conta do servidor (catalogo-api,
+ * aplicarCupom): o desconto é arredondado uma vez, em centavos. Quem decide o desconto de verdade é sempre o servidor.
+ */
+export function comCupomBlackFriday(valor: number): number {
+  const desconto = Math.round(valor * BLACK_FRIDAY.percentual) / 100;
+  return Math.round((valor - desconto) * 100) / 100;
 }

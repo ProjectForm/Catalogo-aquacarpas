@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdicionarBotao } from "@/components/AdicionarBotao";
 import { Galeria } from "@/components/Galeria";
+import { LegendaKit } from "@/components/LegendaKit";
 import { NomeProduto } from "@/components/NomeProduto";
 import { Preco } from "@/components/Preco";
 import { TrackView } from "@/components/TrackView";
@@ -46,8 +47,6 @@ function fichaPublica(p: Produto): [string, string][] {
   }
   const faixa = p.ficha?.faixa_cm;
   if (typeof faixa === "string" && faixa) linhas.push(["Faixa de tamanho", `${faixa} cm`]);
-  const kit = kitDe(p);
-  if (kit?.composicao.length) linhas.push(["Composição", kit.composicao.join(", ")]);
   return linhas;
 }
 
@@ -156,7 +155,7 @@ export default async function ProdutoPage({ params }: Props) {
       <p className="migalha">
         <Link href="/">Catálogo</Link> / {p.nome}
       </p>
-      <div className="produto">
+      <div className={`produto${kit ? " kit" : ""}`}>
         <Galeria imagens={p.imagens} alt={p.nome} />
         <div>
           {exemplar ? (
@@ -167,7 +166,8 @@ export default async function ProdutoPage({ params }: Props) {
           <h1>
             <NomeProduto nome={p.nome} />
           </h1>
-          {exemplar ? null : <Preco p={p} />}
+          {kit ? <LegendaKit kit={kit} grande /> : null}
+          {exemplar ? null : <Preco p={p} citarCupom />}
           {kit?.brinde ? <p className="brinde-bloco">Brinde: {kit.brinde}</p> : null}
 
           {p.descricao ? <p className="descricao">{p.descricao}</p> : null}

@@ -2,13 +2,14 @@ import Link from "next/link";
 import type { Produto } from "@/lib/catalogo";
 import { kitDe, precoSoNaPagina } from "@/lib/catalogo";
 import { AdicionarBotao } from "./AdicionarBotao";
+import { LegendaKit } from "./LegendaKit";
 import { NomeProduto } from "./NomeProduto";
 import { Preco } from "./Preco";
 
 function meta(p: Produto): string {
   const partes: string[] = [];
   const kit = kitDe(p);
-  if (kit?.composicao.length) partes.push(...kit.composicao);
+  if (kit) return ""; // kits têm a legenda própria (quantidade e tamanho), abaixo
   if (p.tamanho_cm) partes.push(`${p.tamanho_cm} cm`);
   const sexo = p.ficha?.sexo;
   if (typeof sexo === "string" && sexo) partes.push(sexo);
@@ -25,10 +26,15 @@ export function ProdutoCard({ produto: p, formato }: { produto: Produto; formato
   const semPreco = precoSoNaPagina(p);
 
   return (
-    <article className={`cartao${indisponivel ? " indisponivel" : ""}`} data-foto={formato} data-codigo={p.codigo}>
+    <article className={`cartao${indisponivel ? " indisponivel" : ""}${kit ? " kit" : ""}`} data-foto={formato} data-codigo={p.codigo}>
       <Link href={`/p/${p.slug}`} className="foto" aria-label={`Ver ${p.nome}`}>
         {p.imagens[0] ? <img src={p.imagens[0]} alt={p.nome} loading="lazy" decoding="async" /> : null}
         {selo ? <span className="selo">{selo}</span> : null}
+        {kit?.quantidade ? (
+          <span className="selo-qtd" aria-hidden="true">
+            <b>{kit.quantidade}</b> koi
+          </span>
+        ) : null}
       </Link>
       <div className="corpo">
         <h3>
@@ -36,6 +42,7 @@ export function ProdutoCard({ produto: p, formato }: { produto: Produto; formato
             <NomeProduto nome={p.nome} />
           </Link>
         </h3>
+        {kit ? <LegendaKit kit={kit} /> : null}
         {linhaMeta ? <p className="meta">{linhaMeta}</p> : null}
         {kit?.brinde ? <p className="brinde">Brinde: {kit.brinde}</p> : null}
         <div className="rodape">

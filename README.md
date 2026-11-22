@@ -36,7 +36,17 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
   = false where codigo = 'KIT-...'`; para tirar todos: `update catalogo_categorias set ativo = false where slug = 'kits-koi'`
   (atenção: com a categoria desligada e o kit ativo, o kit cai na seção "Outros").
   Kits de hoje: 15 koi 10-12 cm R$ 500; 8 koi 15-16 cm R$ 500; 5 koi 21 cm R$ 580; variedade (2x21 + 1x25 + 2x15) R$ 549; 3 koi
-  25-26 cm R$ 599; 2 koi 28-30 cm R$ 790. As fotos são as dos lotes individuais; troque por fotos reais dos kits em `imagens`.
+  25-26 cm R$ 599; premium (1x28-30 + 2x21 + 1x10-12) R$ 720; 2 koi 28-30 cm R$ 790. As fotos são as dos lotes individuais;
+  troque por fotos reais dos kits em `imagens`.
+  **Legenda da quantidade:** `ficha.kit.quantidade` (total de peixes) vira o selo "15 koi" na foto e a linha "15 peixes · 10 a 12
+  cm" sob o nome (`ficha.kit.tamanho`, ou `composicao` nos mistos), em fonte sem serifa (`LegendaKit.tsx`); o nome e o preço do kit
+  usam números alinhados (`lining-nums`) porque a serifa do site desenha o 1 como um I. **"Preço com cupom: R$ X"** aparece sob o
+  preço do kit enquanto a campanha vale (`Preco.tsx`, conta em `comCupomBlackFriday`, igual à do servidor; na página do kit cita
+  o código). É só exibição: quem decide o desconto é o servidor.
+  **Pedido mínimo e cupom:** o mínimo olha o preço do kit ANTES do cupom (regra de 17/11), então um kit de R$ 500 com BLACK30
+  (R$ 350 + frete) fecha online normalmente (conferido na tela /entrega e na função). Só os kits de R$ 720 e R$ 790 ficam com
+  valor depois do cupom (R$ 504 e R$ 553) acima de R$ 500; abaixo disso, em 1 caixa, não há como ter desconto de kit e
+  R$ 500 depois do cupom ao mesmo tempo (o limite de uma caixa é ~R$ 520 em koi pequeno, ~R$ 680 em koi de 21 cm).
 
 ## Abas, WhatsApp e entrega por transportadora
 - **Abas**: cada linha de `catalogo_categorias` é uma aba fixa no topo do catálogo (ex.: "Nishikigoi Ultra Premium"), com a
