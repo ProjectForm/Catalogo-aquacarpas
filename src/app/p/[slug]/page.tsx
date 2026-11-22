@@ -7,9 +7,9 @@ import { NomeProduto } from "@/components/NomeProduto";
 import { Preco } from "@/components/Preco";
 import { TrackView } from "@/components/TrackView";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { buscarProduto, listarProdutos } from "@/lib/catalogo";
+import { buscarProduto, kitDe, listarProdutos, precoSoNaPagina } from "@/lib/catalogo";
 import type { Produto } from "@/lib/catalogo";
-import { linkWhatsApp, POLITICAS, SITE, SITE_URL } from "@/lib/config";
+import { GARANTIA_CURTA, linkWhatsApp, POLITICAS, SITE, SITE_URL } from "@/lib/config";
 
 export const revalidate = 60;
 
@@ -46,7 +46,43 @@ function fichaPublica(p: Produto): [string, string][] {
   }
   const faixa = p.ficha?.faixa_cm;
   if (typeof faixa === "string" && faixa) linhas.push(["Faixa de tamanho", `${faixa} cm`]);
+  const kit = kitDe(p);
+  if (kit?.composicao.length) linhas.push(["Composição", kit.composicao.join(", ")]);
   return linhas;
+}
+
+const ARQUIVO_VIDEO = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
+
+/** Vídeo do exemplar. Arquivo de vídeo toca na própria página (só baixa ao tocar); qualquer outro endereço vira um link. */
+function VideoDoPeixe({ url, capa, nome }: { url: string; capa: string | undefined; nome: string }) {
+  return (
+    <section className="video-peixe" aria-label={`Vídeo de ${nome}`}>
+      <p className="eyebrow">Vídeo do peixe</p>
+      {ARQUIVO_VIDEO.test(url) ? (
+        <video controls playsInline preload="none" poster={capa} src={url}>
+          Seu navegador não toca este vídeo.
+        </video>
+      ) : (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="btn btn-contorno">
+          Assistir ao vídeo
+        </a>
+      )}
+    </section>
+  );
+}
+
+/** Procedência e garantia do exemplar. Só afirma o que vale para toda a loja; origem e certificado de cada peixe vêm da ficha. */
+function Procedencia() {
+  return (
+    <section className="procedencia" aria-labelledby="procedencia-titulo">
+      <h2 id="procedencia-titulo" className="eyebrow">Procedência e garantia</h2>
+      <ul>
+        <li>Vendido pela {SITE.nome} (CNPJ {SITE.cnpj}), de {SITE.cidade}.</li>
+        <li>{POLITICAS.jejum.titulo}: de 1 a 2 dias, para a viagem. {POLITICAS.transporte.titulo}.</li>
+        <li>{GARANTIA_CURTA}</li>
+      </ul>
+    </section>
+  );
 }
 
 export default async function ProdutoPage({ params }: Props) {
@@ -76,7 +112,42 @@ export default async function ProdutoPage({ params }: Props) {
         : undefined,
   };
 
-  const textoWhats = `Olá! Tenho interesse no ${p.nome} (código ${p.codigo}) que vi no catálogo da Aquacarpas.`;
+  // Exemplar único: o preço só aparece aqui, depois do vídeo e da procedência, e a conversa já sai com o peixe identificado.
+  const exemplar = precoSoNaPagina(p);
+  const kit = kitDe(p);
+  const linkPeixe = `${SITE_URL}/p/${p.slug}`;
+  const textoWhats = exemplar
+    ? `Olá! Quero falar sobre este peixe do catálogo da Aquacarpas:\n${p.nome} (código ${p.codigo})\n${linkPeixe}`
+    : `Olá! Tenho interesse no ${p.nome} (código ${p.codigo}) que vi no catálogo da Aquacarpas.\n${linkPeixe}`;
+  const botoes = (
+    <div className="acoes-produto">
+      {exemplar ? (
+        <>
+          <WhatsAppLink href={linkWhatsApp(textoWhats)} className="btn btn-whats btn-bloco" itemCodigo={p.codigo}>
+            Falar sobre este peixe
+          </WhatsAppLink>
+          <AdicionarBotao produto={p} cheio secundario />
+        </>
+      ) : (
+        <>
+          <AdicionarBotao produto={p} cheio />
+          <WhatsAppLink href={linkWhatsApp(textoWhats)} className="btn btn-whats btn-bloco" itemCodigo={p.codigo}>
+            {kit ? "Falar sobre este kit no WhatsApp" : "Falar sobre este peixe no WhatsApp"}
+          </WhatsAppLink>
+        </>
+      )}
+    </div>
+  );
+  const avisoEntrega = (
+    <p className="aviso">
+      {POLITICAS.prazo.titulo}, já considerando o jejum pré-envio. {POLITICAS.transporte.titulo}. O frete é calculado pelo CEP no
+      resumo do pedido ou informado pela nossa equipe pelo WhatsApp.{" "}
+      <Link href="/entrega" style={{ textDecoration: "underline" }}>
+        Ver detalhes da entrega
+      </Link>
+      .
+    </p>
+  );
 
   return (
     <div className="container">
@@ -88,11 +159,16 @@ export default async function ProdutoPage({ params }: Props) {
       <div className="produto">
         <Galeria imagens={p.imagens} alt={p.nome} />
         <div>
-          {p.tipo === "exemplar_unico" ? null : <p className="eyebrow">Vendida por unidade</p>}
+          {exemplar ? (
+            <p className="eyebrow">Exemplar único</p>
+          ) : (
+            <p className="eyebrow">{kit ? "Kit em uma caixa" : "Vendida por unidade"}</p>
+          )}
           <h1>
             <NomeProduto nome={p.nome} />
           </h1>
-          <Preco p={p} />
+          {exemplar ? null : <Preco p={p} />}
+          {kit?.brinde ? <p className="brinde-bloco">Brinde: {kit.brinde}</p> : null}
 
           {p.descricao ? <p className="descricao">{p.descricao}</p> : null}
 
@@ -111,21 +187,19 @@ export default async function ProdutoPage({ params }: Props) {
             <p className="aviso">{p.ficha.observacao_foto}</p>
           ) : null}
 
-          <div className="acoes-produto">
-            <AdicionarBotao produto={p} cheio />
-            <WhatsAppLink href={linkWhatsApp(textoWhats)} className="btn btn-whats btn-bloco" itemCodigo={p.codigo}>
-              Falar sobre este peixe no WhatsApp
-            </WhatsAppLink>
-          </div>
+          {exemplar ? (
+            <>
+              {p.video_url ? <VideoDoPeixe url={p.video_url} capa={p.imagens[0]} nome={p.nome} /> : null}
+              <Procedencia />
+              <div className="bloco-preco">
+                <p className="eyebrow">Valor do exemplar</p>
+                <Preco p={p} />
+              </div>
+            </>
+          ) : null}
 
-          <p className="aviso">
-            {POLITICAS.prazo.titulo}, já considerando o jejum pré-envio. {POLITICAS.transporte.titulo}. O frete é calculado pelo CEP no
-            resumo do pedido ou informado pela nossa equipe pelo WhatsApp.{" "}
-            <Link href="/entrega" style={{ textDecoration: "underline" }}>
-              Ver detalhes da entrega
-            </Link>
-            .
-          </p>
+          {botoes}
+          {avisoEntrega}
         </div>
       </div>
     </div>

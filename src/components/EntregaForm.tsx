@@ -443,6 +443,7 @@ export function EntregaForm() {
                   {i.imagem ? <img src={i.imagem} alt="" /> : <span />}
                   <div>
                     <div className="nome">{i.nome}</div>
+                    {i.brinde ? <div className="sub">Brinde: {i.brinde}</div> : null}
                     {i.tipo === "lote" ? (
                       <div className="qtd" role="group" aria-label={`Quantidade de ${i.nome}`}>
                         <button type="button" aria-label="Diminuir" onClick={() => definirQuantidade(i.codigo, i.quantidade - 1)} disabled={i.quantidade <= Math.max(i.quantidade_minima, 1)}>-</button>

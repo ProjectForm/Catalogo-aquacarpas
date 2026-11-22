@@ -59,7 +59,8 @@ function Quantidade({ produto, quantidade }: { produto: Produto; quantidade: num
   );
 }
 
-export function AdicionarBotao({ produto, cheio = false }: { produto: Produto; cheio?: boolean }) {
+/** `secundario`: o botão de adicionar fica em contorno (na página do exemplar o botão principal é o da conversa no WhatsApp). */
+export function AdicionarBotao({ produto, cheio = false, secundario = false }: { produto: Produto; cheio?: boolean; secundario?: boolean }) {
   const { adicionar, itens } = useCart();
   const classeBloco = cheio ? " btn-bloco" : "";
 
@@ -94,7 +95,7 @@ export function AdicionarBotao({ produto, cheio = false }: { produto: Produto; c
   }
 
   return (
-    <button type="button" className={`btn btn-primario${classeBloco}`} onClick={() => adicionar(produto)}>
+    <button type="button" className={`btn ${secundario ? "btn-contorno" : "btn-primario"}${classeBloco}`} onClick={() => adicionar(produto)}>
       {cheio ? "Adicionar ao pedido" : <>Adicionar<span className="so-largo"> ao pedido</span></>}
     </button>
   );

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Produto } from "@/lib/catalogo";
-import { precoUnitario } from "@/lib/catalogo";
+import { kitDe, precoUnitario } from "@/lib/catalogo";
 import { blackFridayAtiva, SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/config";
 import { consultarCupom } from "@/lib/cupom";
 import type { CupomCalculado } from "@/lib/cupom";
@@ -19,6 +19,8 @@ export interface ItemPedido {
   promo_qtd_minima: number;
   quantidade_minima: number;
   quantidade: number;
+  /** Brinde do kit (ex.: "2 kg de ração 46% de proteína"), só para mostrar no pedido. Itens guardados antes dos kits não têm. */
+  brinde?: string | null;
 }
 
 interface CartCtx {
@@ -157,6 +159,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           promo_qtd_minima: p.promo_qtd_minima,
           quantidade_minima: p.quantidade_minima,
           quantidade: p.tipo === "exemplar_unico" ? 1 : Math.max(qtd ?? 1, inicial),
+          brinde: kitDe(p)?.brinde ?? null,
         },
       ];
     });

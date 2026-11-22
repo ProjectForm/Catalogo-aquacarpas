@@ -1,10 +1,10 @@
 import type { Produto } from "@/lib/catalogo";
-import { promocaoPorQuantidade, temPromocao } from "@/lib/catalogo";
+import { kitDe, promocaoPorQuantidade, temPromocao } from "@/lib/catalogo";
 import { brl } from "@/lib/format";
 
 export function Preco({ p }: { p: Produto }) {
   if (p.preco === null) return <span className="preco consulta">Consulte pelo WhatsApp</span>;
-  const porUnidade = p.tipo === "lote" ? <span className="un">por unidade</span> : null;
+  const porUnidade = p.tipo === "lote" ? <span className="un">{kitDe(p) ? "por kit" : "por unidade"}</span> : null;
 
   if (promocaoPorQuantidade(p)) {
     return (

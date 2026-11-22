@@ -120,3 +120,28 @@ export function precoUnitario(p: Pick<Produto, "preco" | "preco_promocional" | "
 }
 
 export const disponivelParaPedido = (p: Produto) => p.status === "disponivel" && p.preco !== null;
+
+/** Exemplar único (Nishikigoi): o card não mostra preço; o valor só aparece na página do peixe, depois do vídeo e da procedência. */
+export const precoSoNaPagina = (p: Pick<Produto, "tipo">) => p.tipo === "exemplar_unico";
+
+// ---------- kits ----------
+/**
+ * Kit = lote montado para viajar em UMA caixa. É um item comum do `catalogo` (tipo "lote", preço cheio = soma dos peixes,
+ * preço promocional = preço do kit) com `ficha.kit`. Sem tamanho e sem faixa de propósito: o servidor trata item sem tamanho
+ * como 1 caixa por unidade (frete.ts, `milesimosDeVolume(null)`), que é exatamente o que um kit ocupa.
+ */
+export interface KitInfo {
+  /** Composição quando o nome não basta (ex.: kit variedade). */
+  composicao: string[];
+  /** Brinde que acompanha o kit, sem preço (ex.: "2 kg de ração 46% de proteína"). */
+  brinde: string | null;
+}
+
+export function kitDe(p: Pick<Produto, "ficha">): KitInfo | null {
+  const k = p.ficha?.kit;
+  if (!k || typeof k !== "object" || Array.isArray(k)) return null;
+  const o = k as Record<string, unknown>;
+  const composicao = Array.isArray(o.composicao) ? o.composicao.filter((x): x is string => typeof x === "string" && x.trim() !== "") : [];
+  const brinde = typeof o.brinde === "string" && o.brinde.trim() ? o.brinde.trim() : null;
+  return { composicao, brinde };
+}

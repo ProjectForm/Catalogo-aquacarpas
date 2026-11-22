@@ -18,6 +18,26 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
 | `/entrega` | resumo da entrega + **cadastro para envio** (com ou sem itens no pedido): entrega no endereço, retirada na transportadora ou retirada no local |
 | `/obrigado` | confirmação; abre sozinho o WhatsApp da Aquacarpas com os dados do cliente (há botão se não abrir) |
 
+## Exemplar único (preço só na página do peixe) e kits
+- **Exemplar único** (`catalogo.tipo = 'exemplar_unico'`, hoje a aba Nishikigoi Ultra Premium): o card **não mostra preço nem
+  "Adicionar"**, só "Exemplar único" e "Ver peixe" (`ProdutoCard.tsx`, regra em `precoSoNaPagina`, `lib/catalogo.ts`). Na página
+  do peixe a ordem é: descrição, ficha, **vídeo** (se `catalogo.video_url` existir; arquivo mp4/webm/mov/m4v toca na página,
+  qualquer outro endereço vira o link "Assistir ao vídeo"), **procedência e garantia** (texto geral da loja; origem e certificado
+  de cada peixe vêm de `ficha.criador` e `ficha.certificado`), depois o **preço** e os botões: "Falar sobre este peixe" (WhatsApp
+  com mensagem pronta: nome, código e link da página) e "Adicionar ao pedido" em contorno. A compra online continua valendo.
+  Ainda não há vídeo cadastrado em nenhum peixe: para ligar, grave o endereço do arquivo em `catalogo.video_url`.
+- **Kits** (categoria `kits-koi`, ordem 1): item comum do `catalogo` com `tipo = 'lote'`, **preço cheio = soma dos peixes no
+  catálogo, `preco_promocional` = preço do kit** (o card mostra "de R$ X por R$ Y por kit"), `tamanho_cm` e `ficha.faixa_cm`
+  vazios e `ficha.kit = {"composicao": [...], "brinde": "2 kg de ração 46% de proteína"}` (`kitDe`, `lib/catalogo.ts`). O brinde
+  aparece no card, na página, e no resumo do pedido, sem preço. **Frete:** o servidor trata item sem tamanho como 15 unidades de
+  volume = 1 caixa por kit, que é o que cada kit ocupa (teste em `logica.test.ts`); por isso nenhum kit passa de 15 unidades
+  (8 koi de 15-16 cm, 5 de 18-21, 3 de 23-27, 2 de 28-32, 15 de 10-12). O pedido mínimo olha o preço do kit (R$ 500 ou mais fora
+  da região). A mensagem da equipe lista o kit pelo nome; o brinde não vai nela. Para esconder um kit: `update catalogo set ativo
+  = false where codigo = 'KIT-...'`; para tirar todos: `update catalogo_categorias set ativo = false where slug = 'kits-koi'`
+  (atenção: com a categoria desligada e o kit ativo, o kit cai na seção "Outros").
+  Kits de hoje: 15 koi 10-12 cm R$ 500; 8 koi 15-16 cm R$ 500; 5 koi 21 cm R$ 580; variedade (2x21 + 1x25 + 2x15) R$ 549; 3 koi
+  25-26 cm R$ 599; 2 koi 28-30 cm R$ 790. As fotos são as dos lotes individuais; troque por fotos reais dos kits em `imagens`.
+
 ## Abas, WhatsApp e entrega por transportadora
 - **Abas**: cada linha de `catalogo_categorias` é uma aba fixa no topo do catálogo (ex.: "Nishikigoi Ultra Premium"), com a
   contagem de peixes. Para mover um peixe de aba, mude `catalogo.categoria` (slug). Menor `ordem` da categoria aparece antes.

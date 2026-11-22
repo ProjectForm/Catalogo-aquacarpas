@@ -107,6 +107,14 @@ test("caixas: mistura soma o volume (1 exemplar de 33 cm + 3 carpas de 25 cm = 3
   assert.equal(calcularCaixas([{ tamanho_medio_cm: 33, quantidade: 1 }, { tamanho_medio_cm: 25.5, quantidade: 3 }]), 2);
 });
 
+test("caixas: kit (item do catálogo sem tamanho nem faixa) ocupa 1 caixa por kit", () => {
+  // Os kits do catálogo (src/lib/catalogo.ts, kitDe) são montados para 1 caixa e ficam sem tamanho de propósito: o servidor
+  // trata "sem tamanho" como 15 unidades, ou seja, 1 caixa por kit. Se mudar essa regra, os kits mudam de frete junto.
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 1 }]), 1);
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 3 }]), 3);
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 1 }, { tamanho_medio_cm: 11, quantidade: 1 }]), 2);
+});
+
 test("frete: SP 95 por caixa, MG/MS/PR 125, grátis a partir de 2000 (sobre o valor final)", () => {
   const itens = [{ tamanho_medio_cm: 30, quantidade: 4 }]; // 2 caixas
   assert.deepEqual(calcularFrete(itens, "SP", 1500, regras), { caixas: 2, custo_caixa: 95, frete: 190, gratis: false });

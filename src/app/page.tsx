@@ -8,7 +8,7 @@ import { ProdutoCard } from "@/components/ProdutoCard";
 import { ProvaSocial } from "@/components/ProvaSocial";
 import { RevelarAoRolar } from "@/components/RevelarAoRolar";
 import { TrackView } from "@/components/TrackView";
-import { listarSecoes, type Produto } from "@/lib/catalogo";
+import { listarSecoes, precoSoNaPagina, type Produto } from "@/lib/catalogo";
 import { BLACK_FRIDAY, blackFridayAtiva, SITE } from "@/lib/config";
 import { brl } from "@/lib/format";
 
@@ -59,7 +59,13 @@ export default async function Home() {
               </div>
               <div className="legenda">
                 <strong><NomeProduto nome={destaque.nome} /></strong>
-                <span>{destaque.preco !== null ? brl(destaque.preco_promocional !== null && destaque.promo_qtd_minima <= 1 ? destaque.preco_promocional : destaque.preco) : "Consulte"}</span>
+                <span>
+                  {precoSoNaPagina(destaque)
+                    ? "Exemplar único"
+                    : destaque.preco !== null
+                      ? brl(destaque.preco_promocional !== null && destaque.promo_qtd_minima <= 1 ? destaque.preco_promocional : destaque.preco)
+                      : "Consulte"}
+                </span>
               </div>
             </Link>
           ) : null}
