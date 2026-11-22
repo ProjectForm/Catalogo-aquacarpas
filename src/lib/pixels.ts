@@ -174,7 +174,7 @@ function conteudo(codigo: string, valor?: number, nome?: string) {
   return o;
 }
 
-const CLARITY_EVENTOS = new Set(["add_pedido", "iniciou_cadastro", "clique_whatsapp", "frete_calculado", "pagamento_acao", "compra_confirmada"]);
+const CLARITY_EVENTOS = new Set(["add_pedido", "iniciou_cadastro", "clique_whatsapp", "frete_calculado", "pagamento_acao", "compra_confirmada", "contato_saida"]);
 
 /** Repassa os eventos do rastreio próprio para os pixels (se carregados). */
 export function acompanhar(tipo: string, codigo?: string, extra?: Extra) {

@@ -29,7 +29,8 @@ export type TipoEvento =
   | "frete_calculado"
   | "pagamento_acao"
   | "compra_confirmada"
-  | "roleta";
+  | "roleta"
+  | "contato_saida";
 export type Utm = Partial<Record<"source" | "medium" | "campaign" | "content" | "term" | "ref", string>>;
 
 function lerSessao(chave: string): string | null {

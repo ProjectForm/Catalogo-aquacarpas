@@ -100,6 +100,30 @@ Três camadas, da mais simples para a mais pesada:
    esteja ligado ou não). Ao religar o Pixel: **desligue "correspondência avançada automática"** no Gerenciador de Eventos (o
    cadastro tem CPF e telefone).
 
+## Aviso de saída: "Deixe seu contato para receber promoções exclusivas"
+Pedido do Juan (22/11/2026): captar o WhatsApp de quem viu o catálogo e ia embora. `src/components/CapturaSaida.tsx` (montado no
+`layout.tsx`), `src/lib/contato.ts` e a Edge Function **`catalogo-contato`** (cópia em `supabase/functions/catalogo-contato/`, v1,
+`verify_jwt` false, separada das outras de propósito porque aqui entra dado pessoal).
+- **Quando abre (uma vez por visita):** computador: o mouse sai pela borda de cima da janela (visita de pelo menos 6 s); celular (sem
+  mouse): 30 s sem mexer na tela (visita de 12 s) ou voltou ao site depois de 3 s ou mais em outro app (visita de 8 s; é o caso de quem
+  abriu pelo Instagram, saiu e voltou). Não existe evento de "vai sair" que funcione ao fechar o navegador do Instagram: aí não dá tempo.
+  Também há um ocioso de 60 s no computador. Nunca abre em `/entrega`, `/pagamento`, `/obrigado`, `/privacidade`, enquanto a roleta
+  está na tela (`html[data-roleta]`), com a pessoa digitando num campo, nem para quem já enviou; quem fecha (X, Esc, fundo ou "Agora não")
+  não vê de novo por 7 dias. Marca só no aparelho: `localStorage aq_lead_v1` (`enviado` | `dispensado` + data) e `sessionStorage aq_lead_sessao`.
+- **O que pede:** nome (opcional) e WhatsApp (obrigatório, com máscara e validação). O botão "Quero receber promoções" sob o texto de
+  autorização é o consentimento (`consentimento: true` só vai nesse toque). Com itens no pedido o título vira "Guardamos o seu pedido".
+- **Onde grava:** tabela `contatos` (o mini CRM): `origem` pela UTM (anuncio/organico/direto), `origem_detalhe` =
+  `catalogo_saida:<gatilho>[:<utm_source>/<campaign>]`, `tags` = `{lead_catalogo}`, `consentimento_marketing` = true com `consentimento_em`,
+  `status_lead` novo, `modo` humano (o bot não abre conversa sozinho), `observacoes` com a página e a quantidade de itens. Quem já é contato só
+  recebe o consentimento e a tag (nada mais muda). Contato novo dispara aviso no WhatsApp da equipe pelo CallMeBot (mesmo secret dos pedidos).
+  Para listar: `select nome, telefone, origem_detalhe, criado_em from contatos where tags @> array['lead_catalogo'] order by criado_em desc`.
+- **Proteções do servidor:** isca `website`, tempo mínimo de 1,5 s entre abrir e enviar (finge sucesso e não grava), telefone normalizado
+  (55 + DDD + número; o mesmo número nunca vira dois contatos), teto de 40 contatos novos por 10 minutos, só grava com `consentimento === true`.
+- **Medição:** o rastreio anônimo ganhou o tipo `contato_saida` (`dados.acao`: aberto | dispensou | enviou | erro; `dados.gatilho`: mouse | ocioso |
+  voltou), nunca com nome ou telefone. Taxa = `enviou` / `aberto`. O aviso tem `data-clarity-mask`. A `/privacidade` explica o contato.
+- **Pendências:** o texto de privacidade e a mensagem de autorização ainda pedem revisão de quem entende de LGPD; quem recebe promoção precisa
+  mesmo poder sair (responder "sair" e o contato ser marcado, ainda manual); as mensagens por WhatsApp são enviadas à mão pelo Juan.
+
 ## Black Friday 2026 e cupons
 - **Cupom BLACK30**: 30% sobre o total do pedido (já com a promoção por item, quando houver), em qualquer carpa do site,
   até **30/11/2026 23:59:59 (Brasília)**. Fonte da verdade no **servidor**: tabela `cupons` (RLS ligada, sem política pública,
@@ -219,6 +243,12 @@ Se o `npm install` acusar erro de certificado (`UNABLE_TO_GET_ISSUER_CERT_LOCALL
 `npm run foto -- "caminho/da/foto.jpg" nome-do-arquivo` reduz para no máximo 1600 px e converte para WebP em
 `public/fotos/nome-do-arquivo.webp`. Depois o item recebe `/fotos/nome-do-arquivo.webp` na coluna `imagens`.
 Use **foto real do peixe**, de cima, em bacia azul ou clara (ver `../conhecimento/referencias-visuais.md`).
+
+**Baixar todas as fotos do catálogo** (para postar, anunciar, mandar no WhatsApp): `npm run exportar-fotos` (ou
+`npm run exportar-fotos -- "D:/outra/pasta"`). Cria a pasta `fotos-catalogo` ao lado do projeto (fora do Git) com cada foto em JPG de
+qualidade máxima, os `.webp` exatos do site em `webp-original/` e um `indice.csv` (abre no Excel) dizendo de qual item é cada foto,
+o tamanho em pixels e quais têm resolução baixa. **Limite:** o projeto só guarda a versão otimizada (até 1600 px no lado maior); a
+foto original do celular não está aqui, e o JPG não recupera detalhe que o WebP já perdeu. Rode de novo quando entrar foto nova.
 
 ## Publicar na Vercel
 Este diretório é o repositório `github.com/ProjectForm/Catalogo-aquacarpas` (branch `main`). Importar esse repositório

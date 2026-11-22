@@ -11,6 +11,8 @@ export const SITE_URL = (producao ? `https://${producao}` : (process.env.NEXT_PU
 export const API_URL = `${SUPABASE_URL}/functions/v1/catalogo-api`;
 /** Função só dos eventos de navegação (rastreio próprio e anônimo); separada da API de pedidos de propósito. */
 export const EVENTOS_URL = `${SUPABASE_URL}/functions/v1/catalogo-eventos`;
+/** Função só do contato deixado no aviso de saída (WhatsApp para promoções, com consentimento); separada das outras de propósito. */
+export const CONTATO_URL = `${SUPABASE_URL}/functions/v1/catalogo-contato`;
 
 /**
  * Medição de terceiros (anúncios e comportamento). Os IDs são públicos (aparecem no código de qualquer site que usa essas

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter, Jost } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { CapturaSaida } from "@/components/CapturaSaida";
 import { CartBar } from "@/components/CartBar";
 import { CartProvider } from "@/components/CartProvider";
 import { Footer } from "@/components/Footer";
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WhatsAppFlutuante />
           <Rastreio />
           <Roleta />
+          <CapturaSaida />
           <Medicao />
         </CartProvider>
         <Analytics />

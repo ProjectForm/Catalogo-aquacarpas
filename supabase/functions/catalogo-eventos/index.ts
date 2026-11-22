@@ -43,6 +43,7 @@ const EVENTOS = new Set([
   "pagamento_acao", // dados.acao: pix_copiado, infinitepay, ja_paguei
   "compra_confirmada", // pagamento confirmado na tela
   "roleta", // dados.acao: aberta, giro (+ dados.resultado: gratis|ganhou e dados.valor: nº do giro; na 1ª versão da roleta o "gratis" se chamava "tente"), escolher, fechou (resultado: sem_girar|gratis|ganhou)
+  "contato_saida", // aviso "deixe seu contato": dados.acao: aberto, dispensou, enviou, erro + dados.gatilho: mouse|ocioso|voltou (NUNCA nome ou telefone: eles vão só para a catalogo-contato)
 ]);
 
 function limpar(v: unknown, max = 200): string {
@@ -63,7 +64,7 @@ function limparUtm(u: unknown): Record<string, string> {
 }
 
 /** Únicas chaves aceitas em `dados` (lista fechada: um nome, telefone ou e-mail enviado por engano é descartado). */
-const CHAVES = new Set(["pct", "secao", "alvo", "seg", "scroll", "campo", "resultado", "acao", "valor", "itens", "online"]);
+const CHAVES = new Set(["pct", "secao", "alvo", "seg", "scroll", "campo", "resultado", "acao", "valor", "itens", "online", "gatilho"]);
 
 /** Só aceita objeto simples e pequeno: chaves da lista acima, valores curtos. Qualquer outra coisa vira null. */
 function limparDados(v: unknown): Record<string, string | number | boolean> | null {

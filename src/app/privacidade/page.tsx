@@ -48,6 +48,23 @@ export default function PrivacidadePage() {
           dados do navegador. Esse cookie é necessário para a roleta funcionar.
         </p>
 
+        <h2>Contato para promoções (aviso &quot;Antes de ir&quot;)</h2>
+        <p>
+          Quando você está saindo do catálogo, mostramos uma vez um aviso para você deixar o seu WhatsApp (e, se quiser, o seu
+          nome) e receber ofertas e peixes novos. Só guardamos o contato se você tocar em &quot;Quero receber promoções&quot;, sob o texto
+          de autorização. Junto com ele guardamos a página em que você estava, de qual anúncio ou link você veio e quantos itens
+          tinha no pedido. Usamos só para falar com você pelo WhatsApp sobre ofertas e novidades da {SITE.nome}, e guardamos até
+          você pedir para sair. Para parar de receber ou apagar o seu contato, é só avisar pelo WhatsApp {SITE.whatsappExibicao}{" "}
+          ou pelo e-mail {SITE.email}.
+        </p>
+        <p>
+          Os dados ficam em um banco de dados na nuvem (Supabase), e a nossa equipe é avisada por um serviço de mensagens quando
+          chega um contato novo. Não vendemos nem repassamos o seu contato a outras empresas. No seu aparelho fica apenas uma marca
+          simples (se você deixou o contato ou fechou o aviso, e a data) para o aviso não voltar: se você fecha, ele não aparece de
+          novo por 7 dias. Esses dados não vão para o rastreio anônimo descrito acima nem para as gravações do Clarity (o aviso é
+          mascarado).
+        </p>
+
         {medicao ? (
           <>
             {PIXELS.meta ? (

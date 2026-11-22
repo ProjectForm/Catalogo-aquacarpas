@@ -618,3 +618,35 @@ html[data-roleta="aberta"] .cookies { display: none; }
   .preco .com-cupom .por-peixe { font-size: 0.68rem; }
   .legenda-kit .caixas { font-size: 0.66rem; padding: 0 6px; }
 }
+
+/* ====================================================================================================================
+   Aviso de saída: "Deixe seu contato para receber promoções exclusivas" (components/CapturaSaida.tsx).
+   Fica atrás da roleta (z-index 90) e à frente da barra do pedido e do WhatsApp flutuante.
+   ==================================================================================================================== */
+.saida-fundo { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(4px); overscroll-behavior: contain; animation: roleta-fundo .22s ease both; }
+.saida { position: relative; width: min(400px, 100%); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: hidden auto; padding: 30px 22px 18px; background: var(--bg-2); border: 1px solid var(--linha-forte); border-radius: 8px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); animation: roleta-entra .35s cubic-bezier(.2, .8, .2, 1) both; outline: none; }
+.saida h2 { margin-top: 8px; padding-right: 30px; font-size: clamp(1.7rem, 7.4vw, 2.1rem); line-height: 1.08; }
+.saida .sub { margin: 12px 0 20px; font-size: 0.95rem; line-height: 1.55; color: var(--suave); }
+.saida form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.saida .campo { grid-column: auto; } /* .campo do cadastro ocupa 6 colunas; aqui a grade tem uma só */
+.saida form > .eyebrow, .saida form > .sub, .saida form > h2 { margin-bottom: 0; }
+.saida form > .sub { margin-bottom: 6px; }
+.saida-legal { margin: 0; font-size: 0.74rem; line-height: 1.5; color: var(--suave); }
+.saida-legal a { color: var(--texto-forte); text-decoration: underline; text-decoration-color: rgba(242, 234, 214, 0.4); text-underline-offset: 3px; }
+.saida-nao { justify-self: center; min-height: 44px; padding: 8px 16px; background: none; border: 0; font: 500 0.9rem var(--sans); color: var(--suave); text-decoration: underline; text-decoration-color: rgba(242, 234, 214, 0.35); text-underline-offset: 3px; cursor: pointer; transition: color .15s; }
+.saida-nao:hover { color: var(--texto-forte); }
+/* Celular pequeno (ex.: 320 x 568): compacta para o botão, o texto de autorização e o "Agora não" caberem sem rolar. */
+@media (max-height: 640px) {
+  .saida { padding: 22px 18px 6px; }
+  .saida h2 { margin-top: 4px; font-size: 1.55rem; }
+  .saida form { gap: 10px; }
+  .saida .sub, .saida form > .sub { margin: 6px 0 2px; font-size: 0.88rem; line-height: 1.45; }
+  .saida .campo { gap: 4px; }
+  .saida .campo input { padding: 10px 12px; }
+  .saida .campo label { font-size: 0.8rem; }
+  .saida-legal { font-size: 0.7rem; line-height: 1.4; }
+  .saida-nao { min-height: 40px; padding: 4px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .saida-fundo, .saida { animation: none; }
+}
