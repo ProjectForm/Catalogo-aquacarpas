@@ -21,8 +21,9 @@ export const EVENTOS_URL = `${SUPABASE_URL}/functions/v1/catalogo-eventos`;
  * Com `consentimentoObrigatorio` ligado, os dois só carregam depois que a pessoa toca em "Aceitar" na faixa de cookies (LGPD).
  */
 export const PIXELS = {
-  // "Aqua Carpas's Pixel" (Gerenciador de Eventos da Meta, criado em 2021, proprietário Aqua Carpas). Para trocar por um pixel só do catálogo, mude aqui.
-  meta: process.env.NEXT_PUBLIC_META_PIXEL_ID || "188589343464359",
+  // Conjunto de dados "Aquacarpas Atendimento" (Gerenciador de Eventos da Meta), o código que o Juan passou em 2026-11-22.
+  // (O "Aqua Carpas's Pixel" antigo, de 2021, é o 188589343464359.) Para trocar de pixel, mude aqui.
+  meta: process.env.NEXT_PUBLIC_META_PIXEL_ID || "1592503682603005",
   // Projeto "catálogo" no Microsoft Clarity (clarity.microsoft.com). Para trocar de projeto, mude aqui.
   clarity: process.env.NEXT_PUBLIC_CLARITY_ID || "zhl3tbswvu",
   consentimentoObrigatorio: true,
