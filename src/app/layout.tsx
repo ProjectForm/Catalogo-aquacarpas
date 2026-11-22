@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Cormorant_Garamond, Inter, Jost } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CartBar } from "@/components/CartBar";
 import { CartProvider } from "@/components/CartProvider";
@@ -19,6 +19,8 @@ export const revalidate = 60;
 // 300 é o traço leve do título da primeira tela; 500 e 600 são os títulos e preços do resto do site.
 const serif = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "500", "600"], style: ["normal", "italic"], variable: "--font-serif", display: "swap" });
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+// Fonte só da roleta e do pop do prêmio (números e rótulos): geométrica e leve, lê bem em tamanho pequeno.
+const roletaFonte = Jost({ subsets: ["latin"], variable: "--font-roleta", display: "swap" });
 
 const descricao =
   "Carpas Nishikigoi criadas e selecionadas em São José do Rio Preto - SP. Catálogo online, entrega em até 3 dias úteis e garantia de envio.";
@@ -35,7 +37,7 @@ export const viewport: Viewport = { themeColor: "#0e0e0e", colorScheme: "dark" }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${serif.variable} ${sans.variable}`}>
+    <html lang="pt-BR" className={`${serif.variable} ${sans.variable} ${roletaFonte.variable}`}>
       <body>
         <CartProvider>
           <Header />

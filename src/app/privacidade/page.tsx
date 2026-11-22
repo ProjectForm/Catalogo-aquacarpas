@@ -40,6 +40,14 @@ export default function PrivacidadePage() {
           sem cookies.
         </p>
 
+        <h2>Roleta de desconto</h2>
+        <p>
+          A roleta da Black Friday aparece uma vez só em cada aparelho. Para isso guardamos no seu aparelho, no armazenamento do
+          navegador e em um cookie nosso, um número aleatório, a data e o resultado do giro (por exemplo, se você ganhou o
+          cupom). Não tem nome nem dado pessoal, não é enviado a terceiros e fica guardado por até 1 ano; você pode apagar nos
+          dados do navegador. Esse cookie é necessário para a roleta funcionar e não depende da faixa de cookies.
+        </p>
+
         <h2>Cookies e pixels de terceiros (só se você aceitar)</h2>
         {medicao ? (
           <>
@@ -76,7 +84,7 @@ export default function PrivacidadePage() {
             </p>
           </>
         ) : (
-          <p>No momento não usamos cookies nem pixels de terceiros no catálogo.</p>
+          <p>No momento não usamos cookies de terceiros nem pixels de medição no catálogo.</p>
         )}
 
         <h2>Seus direitos</h2>

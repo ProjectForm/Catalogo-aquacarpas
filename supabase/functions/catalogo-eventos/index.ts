@@ -42,7 +42,7 @@ const EVENTOS = new Set([
   "frete_calculado", // dados.resultado: online, whatsapp, fora_area, retirada...
   "pagamento_acao", // dados.acao: pix_copiado, infinitepay, ja_paguei
   "compra_confirmada", // pagamento confirmado na tela
-  "roleta", // dados.acao: aberta, giro (+ dados.resultado: tente|ganhou e dados.valor: nº do giro), escolher, fechou
+  "roleta", // dados.acao: aberta, giro (+ dados.resultado: gratis|ganhou e dados.valor: nº do giro; na 1ª versão da roleta o "gratis" se chamava "tente"), escolher, fechou (resultado: sem_girar|gratis|ganhou)
 ]);
 
 function limpar(v: unknown, max = 200): string {

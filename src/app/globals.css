@@ -518,8 +518,8 @@ a, button, summary, label { touch-action: manipulation; -webkit-tap-highlight-co
 /* ====================================================================================================================
    Roleta de desconto da Black Friday (abre quando a pessoa entra; ver components/Roleta.tsx).
    ==================================================================================================================== */
-.roleta-fundo { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(6px); overscroll-behavior: contain; animation: roleta-fundo .25s ease both; }
-.roleta { position: relative; width: min(380px, 100%); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; background: var(--bg-2); border: 1px solid var(--linha-forte); border-radius: 8px; padding: 26px 22px 22px; text-align: center; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); animation: roleta-entra .4s cubic-bezier(.2, .8, .2, 1) both; }
+.roleta-fundo { --roleta-fonte: var(--font-roleta), var(--sans); position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(6px); overscroll-behavior: contain; animation: roleta-fundo .25s ease both; }
+.roleta { position: relative; width: min(380px, 100%); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: hidden auto; background: var(--bg-2); border: 1px solid var(--linha-forte); border-radius: 8px; padding: 26px 22px 22px; text-align: center; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); animation: roleta-entra .4s cubic-bezier(.2, .8, .2, 1) backwards; transition: opacity .4s ease, transform .4s ease, filter .4s ease; }
 .roleta h2 { margin-top: 8px; min-height: 2.16em; display: grid; align-items: center; font-size: clamp(1.5rem, 6.6vw, 1.9rem); line-height: 1.08; padding-inline: 14px; }
 .roleta-x { position: absolute; top: 6px; right: 6px; width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 0; border-radius: 50%; color: var(--suave); cursor: pointer; transition: color .15s, background .15s; }
 .roleta-x:hover { color: var(--texto-forte); background: rgba(242, 234, 214, 0.08); }
@@ -531,17 +531,39 @@ a, button, summary, label { touch-action: manipulation; -webkit-tap-highlight-co
 .rf { stroke: #0e0e0e; stroke-width: 1.5; }
 .rf-premio30 { fill: #dcc088; }
 .rf-premio { fill: #f2ead6; }
-.rf-tente, .rf-nada { fill: #1d1d1d; }
-.rt { font-family: var(--sans); }
-.rt-a { font-size: 19px; font-weight: 700; }
-.rt-b { font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
-.rt-premio30 .rt-a { font-size: 25px; }
+.rf-gratis { fill: #1d1d1d; }
+/* Rótulos da roda: fonte própria (Jost), número grande, "%" menor, e a segunda linha (OFF / GRÁTIS) pequena e espaçada. */
+.rt { font-family: var(--roleta-fonte); }
+.rt-n { font-weight: 700; letter-spacing: -0.01em; }
+.rt-p { font-size: 0.56em; font-weight: 600; }
+.rt-g { font-size: 0.5em; font-weight: 600; }
+.rt-b { font-size: 10px; font-weight: 600; letter-spacing: 0.2em; }
 .rt-premio30, .rt-premio { fill: #0e0e0e; }
-.rt-tente, .rt-nada { fill: rgba(242, 234, 214, 0.8); }
-.rt-tente .rt-a, .rt-nada .rt-a { font-size: 13.5px; font-weight: 600; }
-.rt-tente .rt-b, .rt-nada .rt-b { font-size: 9.5px; }
+.rt-gratis { fill: rgba(242, 234, 214, 0.9); }
+.rt-gratis .rt-n { fill: #dcc088; }
 .roleta-msg { min-height: 3em; display: grid; align-items: center; margin-bottom: 14px; font-size: 0.92rem; line-height: 1.5; color: var(--suave); }
 html[data-roleta="aberta"] .cookies { display: none; }
+
+/* Pop do prêmio: aparece por cima da roleta (que fica parada, escurecida) um instante depois que ela para. */
+.roleta-fundo > .roleta, .roleta-fundo > .premio { grid-area: 1 / 1; }
+.roleta.recuada { opacity: 0.2; transform: scale(0.93); filter: blur(3px); pointer-events: none; transition-delay: .7s; }
+.premio { position: relative; z-index: 2; width: min(340px, 100%); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: hidden auto; padding: 34px 24px 24px; text-align: center; background: var(--bg-2); border: 1px solid rgba(220, 192, 136, 0.55); border-radius: 8px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 80px rgba(220, 192, 136, 0.12); animation: premio-entra .6s cubic-bezier(.2, 1.15, .3, 1) .7s backwards; }
+.premio::before { content: ""; position: absolute; left: -20%; right: -20%; top: -36%; height: 72%; background: radial-gradient(closest-side, rgba(220, 192, 136, 0.24), transparent); pointer-events: none; animation: premio-brilho 3s ease-in-out infinite alternate; }
+.premio > :not(.roleta-x) { position: relative; }
+.premio-valor { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; margin: 4px 0 0; font-family: var(--roleta-fonte); font-weight: 600; line-height: 1; letter-spacing: -0.02em; color: #dcc088; }
+.premio-valor b { font-size: clamp(4.6rem, 24vw, 5.8rem); font-weight: 600; }
+.premio-valor i { font-style: normal; font-size: clamp(2.4rem, 12vw, 3rem); margin-left: 3px; }
+.premio-valor span { flex-basis: 100%; margin-top: 10px; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--suave); }
+.premio-cupom { display: grid; gap: 5px; margin: 22px 0 14px; padding: 13px 16px; border: 1.5px dashed rgba(220, 192, 136, 0.6); border-radius: 6px; background: rgba(220, 192, 136, 0.07); }
+.premio-cupom small { font-size: 0.68rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--suave); }
+.premio-cupom strong { font-family: var(--roleta-fonte); font-size: 1.6rem; font-weight: 600; letter-spacing: 0.2em; padding-left: 0.2em; color: var(--texto-forte); }
+.premio-msg { margin: 0 0 18px; font-size: 0.9rem; line-height: 1.5; color: var(--suave); }
 @keyframes roleta-fundo { from { opacity: 0; } to { opacity: 1; } }
 @keyframes roleta-entra { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .roleta-fundo, .roleta { animation: none; } }
+@keyframes premio-entra { from { opacity: 0; transform: translateY(18px) scale(0.82); } to { opacity: 1; transform: none; } }
+@keyframes premio-brilho { from { opacity: 0.45; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .roleta-fundo, .roleta, .premio, .premio::before { animation: none; }
+  .roleta { transition: none; }
+  .roleta.recuada { transition-delay: 0s; }
+}

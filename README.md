@@ -75,13 +75,20 @@ Três camadas, da mais simples para a mais pesada:
   (código em maiúsculas, `percentual`, `valido_ate`). O visual e o campo do cupom no carrinho seguem a data `BLACK_FRIDAY.fim`
   em `src/lib/config.ts`: se mudar o prazo no banco, mude lá também.
 - **Roleta de desconto** (`src/components/Roleta.tsx`, montada no layout): abre ~1 s depois que a pessoa entra no catálogo
-  (qualquer página, menos `/entrega`, `/pagamento`, `/obrigado` e `/privacidade`), uma vez por aparelho até ganhar
-  (`localStorage aq_roleta_v1`); quem fecha no X/Esc sem ganhar só a vê de novo na próxima visita (`sessionStorage
-  aq_roleta_fechada`). O resultado é sorteado entre **30% (cupom BLACK30)** e **"tente de novo"** (50% cada; depois de 2 "tente
-  de novo" seguidos o próximo giro é o prêmio). As fatias de 15%, 5% e "não ganhou nada" são **só desenho**: nunca saem. Ao
-  ganhar, o código é guardado no carrinho (`guardarCupom` em `CartProvider`) e o desconto continua sendo **calculado pelo
-  servidor** (nada mudou na `catalogo-api`). Eventos do rastreio próprio: `roleta` com `dados.acao` = aberta | giro (`resultado`
-  tente/ganhou e `valor` = nº do giro) | escolher | fechou. Sumir é automático depois de `BLACK_FRIDAY.fim`.
+  (qualquer página, menos `/entrega`, `/pagamento`, `/obrigado` e `/privacidade`) **uma única vez por aparelho**: ao abrir,
+  já grava uma marca (`localStorage aq_roleta_v2` + cookie próprio `aq_roleta`, 1 ano; JSON com id aleatório, data, nº de giros
+  e resultado, sem dado pessoal; `aq_roleta_v1`, da 1ª versão, também vale), então recarregar, fechar ou abrir outra aba não a
+  traz de volta. Só volta se a pessoa apagar os dados do navegador ou usar outro aparelho/navegador/aba anônima (limite
+  conhecido; travar de verdade exigiria identificar a pessoa, e o cupom BLACK30 em si é público). O resultado de cada giro é
+  sorteado entre **30% (cupom BLACK30, a única fatia de 30%)** e **"+1 giro grátis"** (50% cada; depois de 2 "+1 giro grátis"
+  seguidos o próximo giro é o prêmio). A roda tem 6 fatias; 15% e 5% são **só desenho** (nunca saem) e não há "não ganhou
+  nada". O resultado é decidido e gravado no clique (se a página recarregar no meio do giro o cupom não se perde; um giro
+  grátis pendente, porém, se perde). Ao ganhar aparece um **pop do prêmio** por cima da roda (30%, cupom BLACK30, validade) e
+  o código é guardado no carrinho (`guardarCupom` em `CartProvider`); o desconto continua sendo **calculado pelo servidor**
+  (nada mudou na `catalogo-api`). Fonte própria da roda e do pop: Jost (`--font-roleta`, em `layout.tsx`). Eventos do rastreio
+  próprio: `roleta` com `dados.acao` = aberta | giro (`resultado` gratis/ganhou e `valor` = nº do giro; na 1ª versão o
+  "gratis" se chamava "tente") | escolher | fechou (`resultado` sem_girar/gratis/ganhou). Sumir é automático depois de
+  `BLACK_FRIDAY.fim`. A marca e o cookie estão descritos em `/privacidade`.
 - **Visual da campanha** (subtítulo "Oferta especial Black Friday" na primeira tela, entrada suave dos cards, roleta, aviso e
   campo do cupom no carrinho) é controlado só por `blackFridayAtiva()` em `src/lib/config.ts` e **some sozinho** depois de
   `fim`: o layout se refaz a cada 60 s. Os textos da campanha ficam em `BLACK_FRIDAY` (mesmo arquivo). A primeira tela e os
