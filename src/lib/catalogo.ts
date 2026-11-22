@@ -139,6 +139,8 @@ export interface KitInfo {
   composicao: string[];
   /** Brinde que acompanha o kit, sem preço (ex.: "2 kg de ração 46% de proteína"). */
   brinde: string | null;
+  /** Caixas que o kit ocupa no frete (ficha.kit.volume_unidades ÷ 15, arredondado para cima); 1 se não informado. */
+  caixas: number;
 }
 
 export function kitDe(p: Pick<Produto, "ficha">): KitInfo | null {
@@ -149,7 +151,13 @@ export function kitDe(p: Pick<Produto, "ficha">): KitInfo | null {
   const brinde = typeof o.brinde === "string" && o.brinde.trim() ? o.brinde.trim() : null;
   const quantidade = typeof o.quantidade === "number" && Number.isFinite(o.quantidade) && o.quantidade > 0 ? Math.floor(o.quantidade) : null;
   const tamanho = typeof o.tamanho === "string" && o.tamanho.trim() ? o.tamanho.trim() : null;
-  return { quantidade, tamanho, composicao, brinde };
+  const volume = typeof o.volume_unidades === "number" && Number.isFinite(o.volume_unidades) && o.volume_unidades > 0 ? o.volume_unidades : 15;
+  return { quantidade, tamanho, composicao, brinde, caixas: Math.max(1, Math.ceil(volume / 15)) };
+}
+
+/** Valor por peixe do kit (kit ÷ quantidade), em reais e centavos; null se o kit não informa a quantidade. */
+export function valorPorPeixe(valorKit: number, quantidade: number | null): number | null {
+  return quantidade && quantidade > 0 ? Math.round((valorKit / quantidade) * 100) / 100 : null;
 }
 
 /** "15 peixes" / "1 peixe". */

@@ -71,10 +71,35 @@ export function milesimosDeVolume(tamanhoCm: number | null): number {
 export interface ItemFrete {
   tamanho_medio_cm: number | null;
   quantidade: number;
+  /**
+   * Volume FIXO de cada unidade, em milésimos de unidade de volume (kits). Vence o tamanho. Um kit de 2 caixas tem 30000.
+   * Sem isto, um item sem tamanho vale 15000 (1 caixa), que é o que os kits de 1 caixa ocupam.
+   */
+  volume_milesimos?: number | null;
+}
+
+/** Volume de UMA unidade do item, em milésimos: o fixo do kit, se houver, senão o da faixa de tamanho. */
+export function volumeDoItem(i: ItemFrete): number {
+  const v = i.volume_milesimos;
+  if (typeof v === "number" && Number.isFinite(v) && v > 0) return Math.round(v);
+  return milesimosDeVolume(i.tamanho_medio_cm);
+}
+
+/**
+ * Volume fixo de um kit, lido de `catalogo.ficha.kit.volume_unidades` (em unidades de volume, ex.: 30 = 2 caixas), em milésimos.
+ * null = não é kit ou o valor não serve (então vale a regra do tamanho). Aceita de 0,5 a 300 unidades.
+ */
+export function volumeDeKit(ficha: unknown): number | null {
+  if (!ficha || typeof ficha !== "object") return null;
+  const kit = (ficha as Record<string, unknown>).kit;
+  if (!kit || typeof kit !== "object") return null;
+  const v = (kit as Record<string, unknown>).volume_unidades;
+  if (typeof v !== "number" || !Number.isFinite(v) || v < 0.5 || v > 300) return null;
+  return Math.round(v * 1000);
 }
 
 export function calcularCaixas(itens: ItemFrete[], capacidade = 15): number {
-  const total = itens.reduce((s, i) => s + milesimosDeVolume(i.tamanho_medio_cm) * i.quantidade, 0);
+  const total = itens.reduce((s, i) => s + volumeDoItem(i) * i.quantidade, 0);
   return total <= 0 ? 0 : Math.ceil(total / (capacidade * 1000));
 }
 

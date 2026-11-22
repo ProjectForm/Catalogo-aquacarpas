@@ -1,5 +1,5 @@
 import type { Produto } from "@/lib/catalogo";
-import { comCupomBlackFriday, kitDe, precoUnitario, promocaoPorQuantidade, temPromocao } from "@/lib/catalogo";
+import { comCupomBlackFriday, kitDe, precoUnitario, promocaoPorQuantidade, temPromocao, valorPorPeixe } from "@/lib/catalogo";
 import { BLACK_FRIDAY, blackFridayAtiva } from "@/lib/config";
 import { brl } from "@/lib/format";
 
@@ -8,12 +8,25 @@ export function Preco({ p, citarCupom = false }: { p: Produto; citarCupom?: bool
   if (p.preco === null) return <span className="preco consulta">Consulte pelo WhatsApp</span>;
   const kit = kitDe(p);
   const porUnidade = p.tipo === "lote" ? <span className="un">{kit ? "por kit" : "por unidade"}</span> : null;
-  // Só nos kits, durante a campanha: o valor já com o cupom (conta igual à do servidor; o servidor é quem decide).
+
+  // Kits: valor por peixe (nos mistos, a média) e, durante a campanha, o preço com o cupom e o valor por peixe já com o cupom.
+  // Conta igual à do servidor (comCupomBlackFriday); só exibição, quem decide o desconto é o servidor.
   const valorKit = precoUnitario(p, 1);
+  const misto = (kit?.composicao.length ?? 0) > 0;
+  const rotuloPeixe = (valor: number | null) =>
+    valor === null ? null : (
+      <span className="por-peixe">
+        {misto ? "média de " : ""}
+        {brl(valor)} por peixe
+      </span>
+    );
+  const porPeixeKit = kit && valorKit !== null ? rotuloPeixe(valorPorPeixe(valorKit, kit.quantidade)) : null;
+  const valorComCupom = kit && blackFridayAtiva() && valorKit !== null ? comCupomBlackFriday(valorKit) : null;
   const comCupom =
-    kit && blackFridayAtiva() && valorKit !== null ? (
+    valorComCupom !== null ? (
       <span className="com-cupom">
-        Preço com cupom{citarCupom ? ` ${BLACK_FRIDAY.cupom}` : ""}: <b>{brl(comCupomBlackFriday(valorKit))}</b>
+        Preço com cupom{citarCupom ? ` ${BLACK_FRIDAY.cupom}` : ""}: <b>{brl(valorComCupom)}</b>
+        {rotuloPeixe(valorPorPeixe(valorComCupom, kit?.quantidade ?? null))}
       </span>
     ) : null;
 
@@ -34,6 +47,7 @@ export function Preco({ p, citarCupom = false }: { p: Produto; citarCupom?: bool
         <s>{brl(p.preco)}</s>
         <strong>{brl(p.preco_promocional as number)}</strong>
         {porUnidade}
+        {porPeixeKit}
         {comCupom}
       </span>
     );
@@ -42,6 +56,7 @@ export function Preco({ p, citarCupom = false }: { p: Produto; citarCupom?: bool
     <span className="preco">
       <strong>{brl(p.preco)}</strong>
       {porUnidade}
+      {porPeixeKit}
       {comCupom}
     </span>
   );

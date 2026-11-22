@@ -26,27 +26,30 @@ e alimenta o CRM (tabelas `contatos` e `vendas`). **Quem atualiza é o Claude Co
   de cada peixe vêm de `ficha.criador` e `ficha.certificado`), depois o **preço** e os botões: "Falar sobre este peixe" (WhatsApp
   com mensagem pronta: nome, código e link da página) e "Adicionar ao pedido" em contorno. A compra online continua valendo.
   Ainda não há vídeo cadastrado em nenhum peixe: para ligar, grave o endereço do arquivo em `catalogo.video_url`.
-- **Kits** (categoria `kits-koi`, ordem 1): item comum do `catalogo` com `tipo = 'lote'`, **preço cheio = soma dos peixes no
-  catálogo, `preco_promocional` = preço do kit** (o card mostra "de R$ X por R$ Y por kit"), `tamanho_cm` e `ficha.faixa_cm`
-  vazios e `ficha.kit = {"composicao": [...], "brinde": "2 kg de ração 46% de proteína"}` (`kitDe`, `lib/catalogo.ts`). O brinde
-  aparece no card, na página, e no resumo do pedido, sem preço. **Frete:** o servidor trata item sem tamanho como 15 unidades de
-  volume = 1 caixa por kit, que é o que cada kit ocupa (teste em `logica.test.ts`); por isso nenhum kit passa de 15 unidades
-  (8 koi de 15-16 cm, 5 de 18-21, 3 de 23-27, 2 de 28-32, 15 de 10-12). O pedido mínimo olha o preço do kit (R$ 500 ou mais fora
-  da região). A mensagem da equipe lista o kit pelo nome; o brinde não vai nela. Para esconder um kit: `update catalogo set ativo
-  = false where codigo = 'KIT-...'`; para tirar todos: `update catalogo_categorias set ativo = false where slug = 'kits-koi'`
-  (atenção: com a categoria desligada e o kit ativo, o kit cai na seção "Outros").
-  Kits de hoje: 15 koi 10-12 cm R$ 500; 8 koi 15-16 cm R$ 500; 5 koi 21 cm R$ 580; variedade (2x21 + 1x25 + 2x15) R$ 549; 3 koi
-  25-26 cm R$ 599; premium (1x28-30 + 2x21 + 1x10-12) R$ 720; 2 koi 28-30 cm R$ 790. As fotos são as dos lotes individuais;
-  troque por fotos reais dos kits em `imagens`.
-  **Legenda da quantidade:** `ficha.kit.quantidade` (total de peixes) vira o selo "15 koi" na foto e a linha "15 peixes · 10 a 12
-  cm" sob o nome (`ficha.kit.tamanho`, ou `composicao` nos mistos), em fonte sem serifa (`LegendaKit.tsx`); o nome e o preço do kit
-  usam números alinhados (`lining-nums`) porque a serifa do site desenha o 1 como um I. **"Preço com cupom: R$ X"** aparece sob o
-  preço do kit enquanto a campanha vale (`Preco.tsx`, conta em `comCupomBlackFriday`, igual à do servidor; na página do kit cita
-  o código). É só exibição: quem decide o desconto é o servidor.
-  **Pedido mínimo e cupom:** o mínimo olha o preço do kit ANTES do cupom (regra de 17/11), então um kit de R$ 500 com BLACK30
-  (R$ 350 + frete) fecha online normalmente (conferido na tela /entrega e na função). Só os kits de R$ 720 e R$ 790 ficam com
-  valor depois do cupom (R$ 504 e R$ 553) acima de R$ 500; abaixo disso, em 1 caixa, não há como ter desconto de kit e
-  R$ 500 depois do cupom ao mesmo tempo (o limite de uma caixa é ~R$ 520 em koi pequeno, ~R$ 680 em koi de 21 cm).
+- **Kits** (categoria `kits-koi`, ordem 1, primeira aba): item comum do `catalogo` com `tipo = 'lote'`, **`preco` = soma dos
+  peixes soltos, `preco_promocional` = preço do kit** (o card mostra "de R$ X por R$ Y por kit"), `tamanho_cm` e `ficha.faixa_cm`
+  vazios e `ficha.kit = {"quantidade": N, "tamanho": "10 a 12 cm" (ou "composicao": ["2 de 21 cm", ...] nos mistos),
+  "volume_unidades": 30, "brinde": "2 kg de ração 46% de proteína"}` (`kitDe`, `lib/catalogo.ts`).
+  **Regra de preço do kit (decisão do Juan, 22/11):** o kit custa mais de R$ 715 (assim, depois do cupom de 30%, passa de
+  R$ 500) e tem de 8% a 12% de desconto sobre os peixes soltos, **linear pelo preço do peixe: 12% no mais barato (koi 10-12 cm,
+  R$ 34,50) até 8% no mais caro (koi 28-30 cm, R$ 450)**; nos kits mistos o desconto é calculado peixe a peixe e o preço final é
+  arredondado para o real. Em 1 caixa (15 unidades) só o kit de 2 koi de 28-30 cm passa de R$ 715 com esse desconto, por isso os
+  demais ocupam 2 caixas (30 unidades).
+  **Frete:** `ficha.kit.volume_unidades` (unidades de volume; caixa = 15) é lido pela `catalogo-api` (v10, `volumeDeKit` em
+  `frete.ts`, testes em `logica.test.ts`) e vence o tamanho: 30 = 2 caixas, 15 = 1 caixa. Item sem `volume_unidades` e sem
+  tamanho continua valendo 1 caixa. O servidor conferido: kit de 2 caixas em SP = R$ 190 de frete (R$ 250 em MG/PR/MS). O
+  pedido mínimo olha o preço do kit antes do cupom.
+  **Na tela:** selo "30 koi" na foto, legenda "30 peixes · 10 a 12 cm · 2 caixas" (`LegendaKit.tsx`, sans, números alinhados: a
+  serifa do site desenha o 1 como um I), "R$ 30,37 por peixe" (nos mistos, "média de") e, durante a campanha, "Preço com cupom: R$
+  637,70" com "R$ 21,26 por peixe" (`Preco.tsx`; `comCupomBlackFriday` replica a conta do servidor; é só exibição). O brinde
+  aparece no card, na página e no resumo do pedido, sem preço. A mensagem da equipe lista o kit pelo nome; o brinde não vai nela.
+  **Kits de hoje:** duo 2 koi 28-30 cm R$ 828 (1 caixa); 10 koi 18-20 cm R$ 904; 30 koi 10-12 cm R$ 911; 16 koi 15-16 cm R$ 968;
+  variedade 14 koi (3x21 + 3x18-20 + 4x15-16 + 4x10-12) R$ 998; coleção 8 koi (1x28-30 + 2x25-26 + 2x21 + 3x15-16) R$ 1.242 (todos
+  menos o duo, 2 caixas). Os kits antigos (R$ 500 a R$ 790) ficam no banco com `ativo = false` (códigos `KIT-KOI-...`): para
+  voltar, reative-os e desative os novos. As fotos são as dos lotes individuais; troque por fotos reais dos kits em `imagens`.
+  Para esconder um kit: `update catalogo set ativo = false where codigo = 'KIT-...'`; para tirar todos: `update
+  catalogo_categorias set ativo = false where slug = 'kits-koi'` (atenção: com a categoria desligada e o kit ativo, o kit cai na
+  seção "Outros").
 
 ## Abas, WhatsApp e entrega por transportadora
 - **Abas**: cada linha de `catalogo_categorias` é uma aba fixa no topo do catálogo (ex.: "Nishikigoi Ultra Premium"), com a

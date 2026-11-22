@@ -161,7 +161,7 @@ export default async function ProdutoPage({ params }: Props) {
           {exemplar ? (
             <p className="eyebrow">Exemplar único</p>
           ) : (
-            <p className="eyebrow">{kit ? "Kit em uma caixa" : "Vendida por unidade"}</p>
+            <p className="eyebrow">{kit ? (kit.caixas > 1 ? `Kit em ${kit.caixas} caixas` : "Kit em uma caixa") : "Vendida por unidade"}</p>
           )}
           <h1>
             <NomeProduto nome={p.nome} />

@@ -607,3 +607,14 @@ html[data-roleta="aberta"] .cookies { display: none; }
 }
 /* Kits: números alinhados (lining) no nome e no preço; a serifa do site desenha os números "caídos" e "15" parece "ıs". */
 .cartao.kit h3, .cartao.kit .preco strong, .produto.kit h1, .produto.kit .preco strong { font-variant-numeric: lining-nums; font-feature-settings: "lnum" 1; }
+/* Kits: valor por peixe (com e sem cupom) e aviso de mais de uma caixa. */
+.preco .por-peixe { display: block; margin-top: 1px; font-family: var(--sans); font-size: 0.8rem; line-height: 1.3; color: var(--suave); font-variant-numeric: lining-nums; }
+.preco .com-cupom .por-peixe { margin-top: 0; font-size: 0.74rem; }
+.produto .preco .por-peixe { font-size: 0.95rem; }
+.produto .preco .com-cupom .por-peixe { font-size: 0.86rem; }
+.legenda-kit .caixas { padding: 1px 7px; border: 1px solid var(--linha-forte); border-radius: 999px; font-size: 0.72rem; letter-spacing: 0.04em; color: var(--texto); white-space: nowrap; }
+@media (max-width: 560px) {
+  .preco .por-peixe { font-size: 0.72rem; }
+  .preco .com-cupom .por-peixe { font-size: 0.68rem; }
+  .legenda-kit .caixas { font-size: 0.66rem; padding: 0 6px; }
+}

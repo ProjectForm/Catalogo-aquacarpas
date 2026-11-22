@@ -27,7 +27,7 @@
 //  - Pagamento confirmado (status 'pago' / pago_em): o gatilho vendas_baixa_estoque marca exemplar único como 'vendido'.
 //  - Configuração (frete, chave Pix, handle da InfinitePay, liga/desliga) fica na tabela config_loja, nunca no código.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { calcularFrete, escolherZona, tamanhoMedioCm } from "./frete.ts";
+import { calcularFrete, escolherZona, tamanhoMedioCm, volumeDeKit } from "./frete.ts";
 import type { RegrasFrete, ResultadoFrete, ZonaFrete } from "./frete.ts";
 import { gerarPix } from "./pix.ts";
 
@@ -216,6 +216,7 @@ interface Linha {
   tipo: string; // "lote" | "exemplar_unico"
   tamanho_cm: number | null;
   tamanho_medio_cm: number | null; // tamanho_cm ou a média da faixa (ficha.faixa_cm); base do cálculo de caixas
+  volume_milesimos: number | null; // kits: volume fixo por unidade (ficha.kit.volume_unidades); vence o tamanho
   quantidade: number;
   preco_unitario: number;
   subtotal: number;
@@ -276,6 +277,7 @@ async function calcularLinhas(pedidos: Map<string, number>): Promise<{ linhas: L
       tipo: p.tipo === "exemplar_unico" ? "exemplar_unico" : "lote",
       tamanho_cm: p.tamanho_cm ?? null,
       tamanho_medio_cm: tamanhoMedioCm(p.tamanho_cm, p.ficha?.faixa_cm),
+      volume_milesimos: volumeDeKit(p.ficha),
       quantidade: qtd,
       preco_unitario: unit,
       subtotal: arred2(unit * qtd),

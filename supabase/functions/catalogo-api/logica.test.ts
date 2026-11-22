@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { crc16, gerarPix } from "./pix.ts";
-import { calcularCaixas, calcularFrete, escolherZona, milesimosDeVolume, tamanhoMedioCm } from "./frete.ts";
+import { calcularCaixas, calcularFrete, escolherZona, milesimosDeVolume, tamanhoMedioCm, volumeDeKit } from "./frete.ts";
 import type { RegrasFrete } from "./frete.ts";
 
 const regras: RegrasFrete = {
@@ -113,6 +113,28 @@ test("caixas: kit (item do catálogo sem tamanho nem faixa) ocupa 1 caixa por ki
   assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 1 }]), 1);
   assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 3 }]), 3);
   assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 1 }, { tamanho_medio_cm: 11, quantidade: 1 }]), 2);
+});
+
+test("kit com volume fixo: 15 unidades = 1 caixa, 30 = 2 caixas, 29,5 = 2 caixas; vence o tamanho", () => {
+  assert.equal(volumeDeKit({ kit: { volume_unidades: 30 } }), 30000);
+  assert.equal(volumeDeKit({ kit: { volume_unidades: 29.125 } }), 29125);
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 1, volume_milesimos: 30000 }]), 2);
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 1, volume_milesimos: 29500 }]), 2);
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 1, volume_milesimos: 15000 }]), 1);
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 2, volume_milesimos: 30000 }]), 4);
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: 11, quantidade: 1, volume_milesimos: 30000 }]), 2);
+  // kit de 2 caixas + 1 koi de 10-12 cm (1 unidade) passa de 30: 3 caixas
+  assert.equal(calcularCaixas([{ tamanho_medio_cm: null, quantidade: 1, volume_milesimos: 30000 }, { tamanho_medio_cm: 11, quantidade: 1 }]), 3);
+});
+
+test("volume de kit: ignora valor ausente, absurdo ou fora da ficha do kit", () => {
+  assert.equal(volumeDeKit(null), null);
+  assert.equal(volumeDeKit({}), null);
+  assert.equal(volumeDeKit({ kit: {} }), null);
+  assert.equal(volumeDeKit({ kit: { volume_unidades: "30" } }), null);
+  assert.equal(volumeDeKit({ kit: { volume_unidades: 0 } }), null);
+  assert.equal(volumeDeKit({ kit: { volume_unidades: 5000 } }), null);
+  assert.equal(volumeDeKit({ faixa_cm: "10-12" }), null);
 });
 
 test("frete: SP 95 por caixa, MG/MS/PR 125, grátis a partir de 2000 (sobre o valor final)", () => {
