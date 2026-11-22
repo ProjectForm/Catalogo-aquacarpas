@@ -86,16 +86,19 @@ Três camadas, da mais simples para a mais pesada:
    lista fechada de chaves em `dados`. Eventos vão em lote (a cada ~1,5 s ou ao sair da página). Consulte com SQL no Supabase
    (tabela `eventos_site`; agrupe por `sessao` e `tipo`; `utm->>'medium' = 'paid'` separa o tráfego do anúncio).
 2. **Pixel da Meta** e 3. **Microsoft Clarity** (gravações e mapas de calor anônimos): `src/lib/pixels.ts` + `src/components/Medicao.tsx`.
-   **Só funcionam com ID** em `PIXELS` (`src/lib/config.ts`, ou variáveis `NEXT_PUBLIC_META_PIXEL_ID` / `NEXT_PUBLIC_CLARITY_ID` na
-   Vercel) **e depois do "Aceitar"** da faixa de cookies (LGPD; `PIXELS.consentimentoObrigatorio`). Sem ID nada carrega e a faixa
-   não aparece. O **Pixel da Meta fica instalado e travado antes da escolha** (modo oficial de consentimento: `fbq('consent','revoke')`
-   antes do `init`, `grant` no "Aceitar"): sem cookie e sem evento, mas o Pixel Helper e o "Verificar URL" da Meta o enxergam; quem
-   recusa não carrega nada. O Clarity só carrega depois do "Aceitar". Eventos enviados à Meta: PageView, ViewContent, AddToCart, InitiateCheckout, Contact (WhatsApp), Lead (cadastro
-   enviado) e Purchase (pagamento confirmado), sempre só com código do peixe e valores; `autoConfig` desligado (a Meta não lê campos
-   do formulário). No Clarity, as telas `/entrega`, `/pagamento` e `/obrigado` têm o texto mascarado (`data-clarity-mask` em
-   `<main>`, feito por `Rastreio`). A página `/privacidade` explica tudo e tem o botão para mudar a escolha de cookies.
-   Ligar: criar o Pixel (Gerenciador de Eventos) e o projeto no Clarity, colar os IDs e publicar; **desligue "correspondência
-   avançada automática" do Pixel** no Gerenciador de Eventos (o cadastro tem CPF e telefone).
+   Só funcionam com ID em `PIXELS` (`src/lib/config.ts`, ou variáveis `NEXT_PUBLIC_META_PIXEL_ID` / `NEXT_PUBLIC_CLARITY_ID` na Vercel).
+   **Estado em 22/11/2026: Pixel da Meta DESLIGADO (`meta` vazio; o Juan o desativou) e Clarity LIGADO SEM a faixa de cookies**
+   (decisão do Juan, risco de LGPD dele): o Clarity carrega para todos, menos para quem recusou no botão de `/privacidade`
+   (`PreferenciaMedicao`, grava `aq_consent_v1 = nao` e apaga `_clck`/`_clsk`; quem já tinha recusado na faixa antiga continua
+   recusado). **Religar o Pixel traz a faixa de volta** (`consentimentoExigido()` = Pixel ligado + `consentimentoObrigatorio`): aí os dois
+   só carregam depois do "Aceitar" e o Pixel fica instalado e travado antes da escolha (modo de consentimento da Meta:
+   `fbq('consent','revoke')` antes do `init`, `grant` no "Aceitar"; sem cookie e sem evento, mas a Meta recebe o IP ao baixar o script).
+   ID do Pixel guardado: "Aquacarpas Atendimento" 1592503682603005. Eventos enviados à Meta quando ligado: PageView, ViewContent,
+   AddToCart, InitiateCheckout, Contact (WhatsApp), Lead (cadastro enviado) e Purchase (pagamento confirmado), só com código do
+   peixe e valores; `autoConfig` desligado. No Clarity, as telas `/entrega`, `/pagamento` e `/obrigado` têm o texto mascarado
+   (`data-clarity-mask` em `<main>`, feito por `Rastreio`). A página `/privacidade` explica tudo (o texto muda conforme o Pixel
+   esteja ligado ou não). Ao religar o Pixel: **desligue "correspondência avançada automática"** no Gerenciador de Eventos (o
+   cadastro tem CPF e telefone).
 
 ## Black Friday 2026 e cupons
 - **Cupom BLACK30**: 30% sobre o total do pedido (já com a promoção por item, quando houver), em qualquer carpa do site,

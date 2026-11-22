@@ -1,8 +1,9 @@
 "use client";
 
 // Medição de terceiros: Pixel da Meta (anúncios) e Microsoft Clarity (gravações e mapas de calor anônimos).
-// Só carrega com os IDs preenchidos em config.ts (PIXELS) E, se `consentimentoObrigatorio` estiver ligado, depois do
-// "Aceitar" da faixa de cookies. Nunca recebe nome, telefone, e-mail, CPF ou endereço: só página, produto, valor e eventos.
+// Só carrega com os IDs preenchidos em config.ts (PIXELS). Com o Pixel da Meta ligado, só depois do "Aceitar" da faixa de
+// cookies; só com o Clarity (Pixel desligado), roda sem a pergunta e quem recusa em /privacidade não carrega.
+// Nunca recebe nome, telefone, e-mail, CPF ou endereço: só página, produto, valor e eventos.
 import { PIXELS } from "./config";
 
 export interface Extra {
@@ -46,8 +47,26 @@ export function gravarEscolha(e: Escolha) {
   }
 }
 
-/** Pode carregar? (sem consentimento obrigatório, basta ter ID; com ele, só depois do "Aceitar"). */
-export const podeCarregar = () => terceirosConfigurados() && (!PIXELS.consentimentoObrigatorio || lerEscolha() === "sim");
+/**
+ * A faixa de cookies só é exigida com o Pixel da Meta ligado (a Meta pede consentimento). Só com o Clarity, não há pergunta:
+ * ele roda para todos, menos para quem recusou em /privacidade.
+ */
+export const consentimentoExigido = () => PIXELS.consentimentoObrigatorio && Boolean(PIXELS.meta);
+
+/** Pode carregar? Quem recusou nunca carrega; com a faixa exigida, só depois do "Aceitar". */
+export const podeCarregar = () => terceirosConfigurados() && lerEscolha() !== "nao" && (!consentimentoExigido() || lerEscolha() === "sim");
+
+/** Apaga os cookies do Clarity deste site (best effort; os do domínio do próprio Clarity não dá para apagar daqui). */
+export function apagarCookiesClarity() {
+  try {
+    for (const nome of ["_clck", "_clsk"]) {
+      document.cookie = `${nome}=; max-age=0; path=/`;
+      document.cookie = `${nome}=; max-age=0; path=/; domain=${location.hostname}`;
+    }
+  } catch {
+    /* ignora */
+  }
+}
 
 let carregado = false;
 let metaPronto = false;

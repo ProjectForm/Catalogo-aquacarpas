@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { AbrirCookies } from "@/components/Medicao";
+import { AbrirCookies, PreferenciaMedicao } from "@/components/Medicao";
 import { TrackView } from "@/components/TrackView";
 import { PIXELS, SITE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Privacidade e cookies",
-  description: "Quais dados a Aquacarpas usa no catálogo online, para quê, e como recusar cookies de medição.",
+  description: "Quais dados a Aquacarpas usa no catálogo online, para quê, e como desligar a medição.",
   alternates: { canonical: "/privacidade" },
 };
 
@@ -45,46 +45,68 @@ export default function PrivacidadePage() {
           A roleta da Black Friday aparece uma vez só em cada aparelho. Para isso guardamos no seu aparelho, no armazenamento do
           navegador e em um cookie nosso, um número aleatório, a data e o resultado do giro (por exemplo, se você ganhou o
           cupom). Não tem nome nem dado pessoal, não é enviado a terceiros e fica guardado por até 1 ano; você pode apagar nos
-          dados do navegador. Esse cookie é necessário para a roleta funcionar e não depende da faixa de cookies.
+          dados do navegador. Esse cookie é necessário para a roleta funcionar.
         </p>
 
-        <h2>Cookies e pixels de terceiros (só se você aceitar)</h2>
         {medicao ? (
           <>
             {PIXELS.meta ? (
-              <p>
-                Antes da sua escolha, o código do Pixel da Meta fica na página travado: ele não grava cookies e não envia nenhum
-                evento sobre a sua visita. Como o arquivo do Pixel vem dos servidores da Meta, o seu navegador o baixa de lá e a
-                Meta recebe o seu endereço de IP nessa busca.
-              </p>
-            ) : null}
-            <p>Se você tocar em &quot;Aceitar&quot; na faixa de cookies, liberamos:</p>
-            <ul>
-              {PIXELS.meta ? (
-                <li>
-                  <strong>Pixel da Meta (Facebook e Instagram):</strong> mede quantas pessoas que viram o nosso anúncio visitaram o
-                  catálogo, olharam um peixe, adicionaram ao pedido ou falaram pelo WhatsApp, para sabermos quais anúncios
-                  funcionam e mostrá-los a quem tem interesse. Usa cookies da Meta. Não enviamos nome, telefone, e-mail, CPF nem
-                  endereço.
-                </li>
-              ) : null}
-              {PIXELS.clarity ? (
-                <li>
-                  <strong>Microsoft Clarity:</strong> mostra, em mapas de calor e gravações anônimas da tela, onde as pessoas
-                  clicam e rolam, para vermos o que atrapalha. Nas telas de entrega, pagamento e confirmação todo o texto e os
-                  campos ficam mascarados (não aparecem nas gravações).
-                </li>
-              ) : null}
-            </ul>
-            <p>
-              Se você recusar, o catálogo funciona igual. Pode mudar de ideia a qualquer momento:
-            </p>
-            <p style={{ marginTop: 14 }}>
-              <AbrirCookies />
-            </p>
+              <>
+                <h2>Cookies e pixels de terceiros (só se você aceitar)</h2>
+                <p>
+                  Antes da sua escolha, o código do Pixel da Meta fica na página travado: ele não grava cookies e não envia nenhum
+                  evento sobre a sua visita. Como o arquivo do Pixel vem dos servidores da Meta, o seu navegador o baixa de lá e a
+                  Meta recebe o seu endereço de IP nessa busca.
+                </p>
+                <p>Se você tocar em &quot;Aceitar&quot; na faixa de cookies, liberamos:</p>
+                <ul>
+                  <li>
+                    <strong>Pixel da Meta (Facebook e Instagram):</strong> mede quantas pessoas que viram o nosso anúncio visitaram
+                    o catálogo, olharam um peixe, adicionaram ao pedido ou falaram pelo WhatsApp, para sabermos quais anúncios
+                    funcionam e mostrá-los a quem tem interesse. Usa cookies da Meta. Não enviamos nome, telefone, e-mail, CPF
+                    nem endereço.
+                  </li>
+                  {PIXELS.clarity ? (
+                    <li>
+                      <strong>Microsoft Clarity:</strong> mostra, em mapas de calor e gravações anônimas da tela, onde as pessoas
+                      clicam e rolam, para vermos o que atrapalha. Nas telas de entrega, pagamento e confirmação todo o texto e os
+                      campos ficam mascarados (não aparecem nas gravações).
+                    </li>
+                  ) : null}
+                </ul>
+                <p>Se você recusar, o catálogo funciona igual. Pode mudar de ideia a qualquer momento:</p>
+                <p style={{ marginTop: 14 }}>
+                  <AbrirCookies />
+                </p>
+              </>
+            ) : (
+              <>
+                <h2>Medição do comportamento no catálogo (Microsoft Clarity)</h2>
+                <p>
+                  Para vermos o que atrapalha a navegação, usamos o Microsoft Clarity. Ele faz mapas de calor e gravações
+                  anônimas da tela, mostrando onde as pessoas clicam e rolam, e usa cookies próprios para reconhecer a mesma visita
+                  durante a navegação. Nas telas de entrega, pagamento e confirmação todo o texto e os campos ficam mascarados:
+                  nome, telefone, CPF, endereço e dados de pagamento não aparecem nas gravações. Não ligamos isso ao seu nome. Os
+                  dados da medição ficam com a Microsoft, conforme a política de privacidade dela.
+                </p>
+                <p>
+                  Esta medição fica ligada por padrão, sem faixa de cookies. Se você não quiser, desligue aqui (vale para este
+                  aparelho; o catálogo funciona igual):
+                </p>
+                <div style={{ marginTop: 14 }}>
+                  <PreferenciaMedicao />
+                </div>
+                <p>
+                  Hoje não usamos o Pixel da Meta (Facebook e Instagram) nem outros pixels de anúncio no catálogo.
+                </p>
+              </>
+            )}
           </>
         ) : (
-          <p>No momento não usamos cookies de terceiros nem pixels de medição no catálogo.</p>
+          <>
+            <h2>Cookies e pixels de terceiros</h2>
+            <p>No momento não usamos cookies de terceiros nem pixels de medição no catálogo.</p>
+          </>
         )}
 
         <h2>Seus direitos</h2>

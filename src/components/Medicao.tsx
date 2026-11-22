@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PIXELS } from "@/lib/config";
-import { carregarTerceiros, gravarEscolha, lerEscolha, podeCarregar, prepararMeta, terceirosConfigurados } from "@/lib/pixels";
+import { apagarCookiesClarity, carregarTerceiros, consentimentoExigido, gravarEscolha, lerEscolha, podeCarregar, prepararMeta, terceirosConfigurados } from "@/lib/pixels";
 import { capturarUtm, utmAtual } from "@/lib/tracking";
 
 /**
- * Pixel da Meta e Microsoft Clarity. Sem ID em config.ts (PIXELS) não faz nada e nenhuma faixa aparece. Com ID, o Pixel da
- * Meta fica instalado mas travado (modo de consentimento da Meta: sem cookie e sem evento) e só destrava, junto com o Clarity,
- * depois do "Aceitar" da faixa de cookies (LGPD: cookies de marketing/medição de terceiros pedem consentimento). Quem recusa
- * não carrega nada. Quem já escolheu não vê a faixa de novo; a página /privacidade tem o botão para mudar de ideia.
+ * Pixel da Meta e Microsoft Clarity. Sem ID em config.ts (PIXELS) não faz nada e nenhuma faixa aparece.
+ *  - Com o Pixel da Meta LIGADO: ele fica instalado mas travado (modo de consentimento da Meta: sem cookie e sem evento) e só
+ *    destrava, junto com o Clarity, depois do "Aceitar" da faixa de cookies (LGPD). Quem recusa não carrega nada.
+ *  - Com o Pixel DESLIGADO (hoje): não há faixa; o Clarity carrega para todos, menos para quem recusou em /privacidade
+ *    (`PreferenciaMedicao`). Decisão do Juan em 2026-11-22.
  */
 export function Medicao() {
   const [aberto, setAberto] = useState(false);
@@ -23,7 +23,7 @@ export function Medicao() {
     else {
       // Pixel da Meta instalado e travado (sem cookie e sem evento) até o "Aceitar": é o que o torna detectável pela Meta.
       prepararMeta();
-      if (PIXELS.consentimentoObrigatorio && lerEscolha() === null) timer = setTimeout(() => setAberto(true), 1400);
+      if (consentimentoExigido() && lerEscolha() === null) timer = setTimeout(() => setAberto(true), 1400);
     }
     const reabrir = () => setAberto(true);
     window.addEventListener("aq:cookies", reabrir);
@@ -61,11 +61,36 @@ export function Medicao() {
   );
 }
 
-/** Botão da página /privacidade para reabrir a faixa e mudar a escolha. */
+/** Botão da página /privacidade para reabrir a faixa e mudar a escolha (só existe com o Pixel da Meta ligado). */
 export function AbrirCookies() {
   return (
     <button type="button" className="btn btn-contorno" onClick={() => window.dispatchEvent(new Event("aq:cookies"))}>
       Alterar minha escolha de cookies
     </button>
+  );
+}
+
+/** Botão da página /privacidade (sem faixa de cookies): recusar ou voltar a permitir a medição do Clarity neste aparelho. */
+export function PreferenciaMedicao() {
+  const [recusou, setRecusou] = useState(false);
+  useEffect(() => setRecusou(lerEscolha() === "nao"), []);
+  function alternar() {
+    if (recusou) {
+      gravarEscolha("sim");
+      setRecusou(false);
+      return;
+    }
+    gravarEscolha("nao");
+    apagarCookiesClarity();
+    setRecusou(true);
+    window.location.reload(); // derruba o Clarity que já carregou nesta visita
+  }
+  return (
+    <>
+      <p role="status">{recusou ? "A medição está desligada neste aparelho." : "A medição está ligada."}</p>
+      <button type="button" className="btn btn-contorno" onClick={alternar}>
+        {recusou ? "Permitir a medição de novo" : "Não quero ser medido (desligar o Clarity)"}
+      </button>
+    </>
   );
 }

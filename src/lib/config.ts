@@ -18,12 +18,14 @@ export const EVENTOS_URL = `${SUPABASE_URL}/functions/v1/catalogo-eventos`;
  * Vazio = desligado: nada é carregado e nenhuma faixa de cookies aparece.
  *  - meta: ID do Pixel da Meta (Gerenciador de Eventos > Fontes de dados > Pixel), só números.
  *  - clarity: ID do projeto no Microsoft Clarity (clarity.microsoft.com > Settings > Overview).
- * Com `consentimentoObrigatorio` ligado, os dois só carregam depois que a pessoa toca em "Aceitar" na faixa de cookies (LGPD).
+ * Faixa de cookies: só existe com o Pixel da Meta ligado (`meta` preenchido) e `consentimentoObrigatorio` ligado; aí os dois
+ * só carregam depois do "Aceitar" (LGPD). Com o Pixel desligado, o Clarity roda SEM a pergunta (decisão do Juan em 2026-11-22,
+ * risco de LGPD dele) e a página /privacidade avisa e traz o botão para recusar.
  */
 export const PIXELS = {
-  // Conjunto de dados "Aquacarpas Atendimento" (Gerenciador de Eventos da Meta), o código que o Juan passou em 2026-11-22.
-  // (O "Aqua Carpas's Pixel" antigo, de 2021, é o 188589343464359.) Para trocar de pixel, mude aqui.
-  meta: process.env.NEXT_PUBLIC_META_PIXEL_ID || "1592503682603005",
+  // Pixel da Meta DESLIGADO em 2026-11-22 (o Juan desativou o pixel). Para religar: ID "Aquacarpas Atendimento" 1592503682603005
+  // (o "Aqua Carpas's Pixel" antigo, de 2021, é o 188589343464359), aqui ou em NEXT_PUBLIC_META_PIXEL_ID. Religar traz a faixa de volta.
+  meta: process.env.NEXT_PUBLIC_META_PIXEL_ID || "",
   // Projeto "catálogo" no Microsoft Clarity (clarity.microsoft.com). Para trocar de projeto, mude aqui.
   clarity: process.env.NEXT_PUBLIC_CLARITY_ID || "zhl3tbswvu",
   consentimentoObrigatorio: true,
